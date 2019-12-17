@@ -1,0 +1,879 @@
+﻿
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>
+OlympicHelper FX
+</title>
+	<meta charset="utf-8">
+	<script src="./lib/jquery-1.9.1.js?u=1" charset="utf-8"></script>
+	<script src="./lib/CSInterface.js" charset="utf-8"></script>
+	<script src="./ext.js" charset="utf-8"></script>
+    <script src="./css/jquery-ui-1.12.1.custom/jquery-ui.js" charset="utf-8"></script>
+	<script src="./lib/Vulcan.js" charset="utf-8"></script>
+	<script src="./lib/main.js" charset="utf-8"></script>
+	
+	<link href="css/style.css" rel="stylesheet" type="text/css">
+	<link href="./css/jquery-ui-1.12.1.custom/jquery-ui.min.css" rel="stylesheet" type="text/css">
+
+
+
+  <script>
+  if(!window.location.hash) {
+        window.location = window.location + '#loaded';
+        window.location.reload();
+    }else{
+      //Init stuff here
+    }
+	</script>
+  
+	<script type="text/javascript">
+
+		$(document).ready(function () {
+
+			// For functions which require interaction at the JavaScript level, we provide these JQuery-based
+			// handlers, instead of directly invoking ExtendScript .This givs the JavaScript layer a chance
+			// to pass data into the ExtendScript layer, and process the results.
+
+		
+
+			$("#toggleproxy").on("click", function (e) {
+				e.preventDefault();
+				var csInterface = new CSInterface();
+				csInterface.evalScript('$._PPP_.toggleProxyState()', mySetProxyFunction);
+				csInterface.evalScript('$._PPP_.getProjectProxySetting()', myGetProxyFunction);
+			});
+
+			$("#checkforums").on("click", function (e) {
+				e.preventDefault();
+				var csInterface = new CSInterface();
+				csInterface.openURLInDefaultBrowser("https://forums.adobe.com/community/premiere/sdk");
+			});
+
+			$("#openfolder").on("click", function (e) {
+				e.preventDefault();
+				var csInterface = new CSInterface();
+				var OSVersion = csInterface.getOSInformation();
+				var path = csInterface.getSystemPath(SystemPath.EXTENSION);
+
+				if (OSVersion) {
+					// The path always comes back with '/' path separators. Windows needs '\\'.
+					if (OSVersion.indexOf("Windows") >= 0) {
+						var sep = '\\';
+						path = path.replace(/\//g, sep);
+						window.cep.process.createProcess('C:\\Windows\\explorer.exe', path);
+					} else {
+						window.cep.process.createProcess('/usr/bin/open', path);
+					}
+				}
+			});
+
+			$("#readAPIdocs").on("click", function (e) {
+				e.preventDefault();
+				var csInterface = new CSInterface();
+				csInterface.openURLInDefaultBrowser("http://ppro.aenhancers.com");
+			});
+
+			$("#newseqfrompreset").on("click", function (e) {
+				e.preventDefault();
+				var csInterface = new CSInterface();
+				var OSVersion = csInterface.getOSInformation();
+				var path = csInterface.getSystemPath(SystemPath.EXTENSION);
+
+				if (OSVersion) {
+					// The path always comes back with '/' path separators. Windows needs '\\'.
+					if (OSVersion.indexOf("Windows") >= 0) {
+						var sep = '\\\\';
+						path = path.replace(/\//g, sep);
+					} else {
+						var sep = '/';
+					}
+
+					// Build a String to pass the path to the script.
+					// (Sounds more complicated than it is.)
+
+					path = path + sep + 'payloads' + sep + 'PProPanel.sqpreset';
+
+					var pre = '$._PPP_.createSequenceFromPreset(\'';
+					var post = '\'';
+					var postpost = ')';
+
+					var whole_megillah = pre + path + post + postpost;
+
+					csInterface.evalScript(whole_megillah);
+				}
+			});
+		});
+	</script>
+</head>
+
+<body onLoad="onLoaded()" oncontextmenu="return false;" >
+
+    <div id="dialog-confirm" title="New Version!" style="display:none;">
+        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span><label class="HE">יש גירסה חדשה זמינה להורדה.</label><label class="EN">There is a new version available for download.</label></p><span id="newvers"></span>
+    </div>
+    <a href="https://youtube.com/OlympicAngel" target="_blank"><div class="title">OlympicHelper<p>By OlympicAngel</p></div></a>
+    <button onclick="tooglelang();"><label class="HE">English?</label><label class="EN">עברית?</label></button>
+    
+    <a href="https://www.olympicangelabz.com/plugin_OlympicHelper.php" target="_blank" class="HE"><button style="filter: hue-rotate(140deg)">עדכונים</button></a>
+    <button href="" onclick="window.location.reload();" style="color:#fff;"><label class="EN">Reload</label><label class="HE">טען מחדש</label></button>
+    <br><br>
+    <center id="selection">
+
+    </center>
+    
+    
+    <scrolelr>
+
+        <div id="accordion">
+            <h3 class="camera"><label class="EN">Camera Movement</label><label class="HE">תנועות מצלמה</label></h3>
+            <div>
+                <p>
+                    <div id="cm_loader" class="progress"><div class="innerload EN">Generating Effect</div><div class="innerload HE">מייצר אפקט</div></div>
+                    <table class="cm_table resizer" width="100%" style="padding: 0; margin: 0;">
+                        <tr>
+                            <td>
+
+                                <table style=" border-collapse: collapse;	width: 100%;">
+
+
+
+
+
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Movement amount:</label><label class="HE">כמות תנועה:</label>
+                                        </td>
+                                        <td>
+                                            <input id="cm_multi" value="20" base="10" jqui="spiiners" style="width:30px">%
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Wiggle per sec:</label> <label class="HE">רעידות בשנייה:</label>
+                                        </td>
+                                        <td>
+                                            <input id="cm_rate" value="10" base="15" jqui="spiiners" uistep="0.1" style="width:10px"><label class="EN">wiggles</label> <label class="HE">רעידות</label>
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Horizental scale⯇⯈:</label><label class="HE">יחס רוחב⯈⯇:</label>
+                                        </td>
+                                        <td>
+                                            <input id="cm_Horizental" base="100" value="100" uistep="1" jqui="spiiners" style="width:30px">%
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Vertical scale⯆⯅:</label><label class="HE">יחס אורך⯆⯅:</label>
+                                        </td>
+                                        <td>
+                                            <input id="cm_vertical" base="100" value="100" uistep="1" jqui="spiiners" style="width:30px">%
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td></td>
+                                        <td>
+                                            <input id="cm_scale" checked base="true" type="checkbox" style="    vertical-align: middle;"> <label class="EN">Auto scale to fit</label><label class="HE">הגדלה אוטו' כדי להסתיר בארים שחורים</label>
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$('#bs_scale').prop('checked', true);"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Motion blur:</label><label class="HE">טישטוש מתזוזה:</label>
+                                        </td>
+                                        <td>
+                                            <input id="cm_motion" base="180" value="180" max="360" uistep="1" jqui="spiiners" style="width:20px">/360
+                                        </td>
+                                        <td>
+                                            <img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));">
+
+                                        </td>
+                                    </tr>
+
+
+                                </table>
+                            </td>
+                            <td style="background:#2d2d2d; width:300px" >
+                                    <p class="EN" >An effect that will animate your footage to looke like it was recorded while hand-held. using random noise formula.(Wiggle based)</p>
+                                    <p class="HE">אפקט שינפיש את הווידאו שלכם כך שיראה כאילו הוא צולם כשמישהו מחזיק את המצלמה. משתמש בפורומלט נויז אקראית.(מבוסס וויגל)</p>
+                            </td>
+                        </tr>
+
+                    </table>
+                    <button id="cm_applay" class="cm_table" onClick="cm_click()"><span class="EN">Apply</span><span class="HE">החל אפקט</span></button>
+
+                </p>
+            </div>
+
+
+            <h3 class="camera"><label class="EN">Base Shake</label><label class="HE">רעידות בסיסיות</label></h3>
+            <div>
+                <p>
+                    <div id="bs_loader" class="progress"><div class="innerload EN">Generating Effect</div><div class="innerload HE">מייצר אפקט</div></div>
+                    <table class="bs_table resizer" width="100%" style="padding: 0; margin: 0;">
+                        <tr>
+                            <td>
+
+                                <table style=" border-collapse: collapse;	width: 100%;">
+
+
+
+
+
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Master multiplayer:</label><label class="HE">כנה מידה כללי:</label>
+                                        </td>
+                                        <td>
+                                            <input id="bs_multi" value="100" base="100" jqui="spiiners" style="width:30px">%
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Delay:</label> <label class="HE">דילאי:</label>
+                                        </td>
+                                        <td>
+                                            <input id="bs_rate" value="1" base="1" jqui="spiiners" uistep="1" style="width:10px"><label class="EN">frames</label> <label class="HE">פריימים</label>
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Scale/Horizental⯇⯈:</label><label class="HE">כנה מידה/אופקי⯇⯈:</label>
+                                        </td>
+                                        <td>
+                                            <input id="bs_Horizental" base="100" value="100" uistep="1" jqui="spiiners" style="width:30px">%
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Scale/vertical⯆⯅:</label><label class="HE">כנה מידה/אנכי⯆⯅:</label>
+                                        </td>
+                                        <td>
+                                            <input id="bs_vertical" base="100" value="100" uistep="1" jqui="spiiners" style="width:30px">%
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td></td>
+                                        <td>
+                                            <input id="bs_scale" checked base="true" type="checkbox" style="    vertical-align: middle;"> <label class="EN">Auto scale to fit</label><label class="HE">הגדלה אוטו' כדי שיתאים</label>
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$('#bs_scale').prop('checked', true);"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Motion blur:</label><label class="HE">טישטוש מתזוזה:</label>
+                                        </td>
+                                        <td>
+                                            <input id="bs_motion" base="90" value="90" max="360" uistep="1" jqui="spiiners" style="width:20px">/360
+                                        </td>
+                                        <td>
+                                            <img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));">
+
+                                        </td>
+                                    </tr>
+
+
+                                </table>
+                            </td>
+                            <td style="background:#2d2d2d">
+                                <center>
+                                    <img id="bs_pre" src="./css/examp.png">
+                                    <style id="bs_styleedit">
+
+                                    </style>
+                                </center>
+                            </td>
+                        </tr>
+
+                    </table>
+                    <button id="bs_applay" class="bs_table" onClick="bs_click()"><span class="EN">Apply</span><span class="HE">החל אפקט</span></button>
+                    <button id="bs_preB" class="bs_table" onClick="bs_preview()" style="filter:grayscale(1)"><span class="EN">Preview</span><span class="HE">תצוגה מקדימה</span></button>
+
+
+
+                </p>
+            </div>
+
+            <h3 class="text"><label class="EN">Advanced Text</label><label class="HE">טקסט מתקדם</label></h3>
+            <div>
+                <p>
+                    <div id="tx_loader" class="progress"><div class="innerload EN">Generating Effect <b>Premiere may LAG</b></div><div class="innerload HE">מייצר אפקט <b>פרימייר עשוייה להתקע קצת</b></div></div>
+                    <table class="tx_table resizer" width="100%" style="padding: 0; margin: 0;">
+                        <tr>
+                            <td>
+
+                                <table style=" border-collapse: collapse;	width: 100%;">
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Max Spacing:</label><label class="HE">מרווח אותיות מקסימלי:</label>
+                                        </td>
+                                        <td>
+                                            <input id="tx_tracking" value="100" base="100" uimin="0.1" uimax="300" jqui="spiiners" style="width:30px">%
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Spacing:</label><label class="HE">מרווח אותיות מינימלי:</label>
+                                        </td>
+                                        <td>
+                                            <input id="tx_addtive" base="5" value="5" max="300" uistep="1" jqui="spiiners" style="width:30px">%
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+									
+									<tr><td colspan="2"><hr></td></tr>
+									
+									<tr>
+                                        <td>
+                                            <label class="EN">Max Rotation:</label><label class="HE">סיבוב מקסימלי:</label>
+                                        </td>
+                                        <td>
+                                            <input id="tx_maxRotate" value="180" base="180" uimin="‭-3600‬" uimax="‭3600‬" uistep="1" jqui="spiiners" style="width:30px">°
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Min Rotation:</label><label class="HE">סיבוב מינימלי:</label>
+                                        </td>
+                                        <td>
+                                            <input id="tx_minRotate" value="45" base="45" uimin="‭-3600‬" uimax="‭3600‬" uistep="1" jqui="spiiners" style="width:30px">°
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+									<tr><td>
+									<input type="radio" name="tx_dir" id="tx_dir-1" val="1" checked>
+											 <label for="tx_dir-1"><label class="EN">Spin Dir LTR</label><label class="HE">סיבוב משמאל לימין</label></label>
+											 <span>   </span>
+    										<input type="radio" name="tx_dir" id="tx_dir-2" val="0">
+											<label for="tx_dir-2"><label class="EN">Spin Dir RTL</label><label class="HE">סיבוב מיימין לשמאל</label></label>
+									</td></tr>
+									
+									<tr><td colspan="2"><hr></td></tr>
+									
+									
+									  <tr>
+                                        <td>
+                                            <label class="EN">Animation Time:</label><label class="HE">זמן אנימציה:</label>
+                                        </td>
+                                        <td>
+                                            <input id="tx_AnimationTime" base="3" value="3" max="100" uimin="0.1" uistep="0.1" jqui="spiiners" style="width:30px"> <label class="EN">s</label><label class="HE">שניות</label>
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+									
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Ease function:</label><label class="HE">פונקציית כניסה:</label>
+                                        </td>
+                                        <td>
+                                          <select id="tx_ease" >
+										     <option value="0">Linear</option>
+											 <option value="1">1.0 X Ease (simple)</option>
+										  <option value="1.2">1.2 X Ease</option>
+										  <option value="1.4">1.4 X Ease</option>
+										  <option value="1.6">1.6 X Ease</option>
+										  <option value="1.8">1.8 X Ease</option>
+											 <option value="2">2.0 X Ease</option>
+										  <option value="2.25">2.5 X Ease</option>
+											 <option value="3">3.0 X Super Ease</option>
+											 <option value="4">4.0 X Super Ease</option>
+											 <option value="5">5.0 X OverKill Ease</option>
+										</select>
+										<Style>
+										  .ui-menu-item
+										  {direction:ltr !important}
+										</Style>
+										   
+										    <input type="radio" name="tx_ease" id="tx_radio-1" val="1" checked>
+											 <label for="tx_radio-1"><label class="EN">Ease In</label><label class="HE">כניסה חלקה</label></label>
+											 <span>   </span>
+    										<input type="radio" name="tx_ease" id="tx_radio-2" val="0" >
+											<label for="tx_radio-2"><label class="EN">Ease Out</label><label class="HE">יציאה חלקה</label></label>
+    										
+										
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+
+                                </table>
+                            </td>
+                            <td style="background:#2d2d2d; width:300px">
+                                <center >
+								<h3 class="HE">טקסט מטריילר</h3>
+                                    <p class="HE" style="text-align:justify">אפקט זה מאפשר לכם לעשות אנימצייה לכל אות בטקסט בנפרד, בשביל שזה יעבוד צריך לבחור בשכבת טקסט שתרצו להחיל עלייה את האפקט
+									לאחר מכן בחרו בהגדרות הרצויות ואז לחצו החל אפקט.<br>
+									ככל שיש יותר אותיות ככה יקח יותר זמן לייצר את האפקט, פרימייר עשוייה "לקפא" אבל הכל טוב אחרי זמן מסויים זה יסתדר.<br>
+									<b>חשוב!, חובה לעצב את הטקסט כפי שאתם רוצים -לפני- השימוש באפקט!</b></p>
+									
+									<h3 class="EN">Trailer Text</h3>
+									 <p class="EN">This FX allow you to animate each letter in text sepertly, to do so choosh a text layer from your timeline, choosh your settings and then hit 'Apply'.<br>
+									 the more letter there is - the more time it will take to generate the FX, Premiere will mostlikly freez but it will un freez. <br>
+									 <b>NOTE: you must design your text BEFORE using the effect.</b></p>
+                                </center>
+                            </td>
+                        </tr>
+
+                    </table>
+                    <button id="bs_applay" class="bs_table" onClick="tx_click()"><span class="EN">Apply</span><span class="HE">החל אפקט</span></button>
+
+
+                </p>
+            </div>
+
+
+            <h3 class="blur"><label class="EN">Spin Blur</label><label class="HE">טשטוש סיבובי</label></h3>
+            <div>
+                <p>
+                    <div id="sb_loader" class="progress"><div class="innerload EN">Generating Effect</div><div class="innerload HE">מייצר אפקט</div></div>
+                    <table class="sb_table resizer" width="100%" style="padding: 0; margin: 0;">
+                        <tr>
+                            <td>
+                                <table style=" border-collapse: collapse;	width: 100%;">
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Spin amount:</label><label class="HE">כמות סיבוב:</label>
+                                        </td>
+                                        <td>
+                                            <input id="sb_spin" value="40" base="40" min=0 max=360 jqui="spiiners" style="width:30px">°
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Spin amount value's function:</label><label class="HE">פונקציית ערכים של כמות סיבוב</label>
+                                        </td>
+                                        <td>
+                                            <input id="sb_func" type="text" mode="function" dir="ltr" placeholder="[1,{x} , Math.sqrt({x}) , {x}/2 , etc..]"><br>
+                                        </td>
+                                        <td>
+                                            <img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[type=function]').val('')">
+
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Blur length:</label> <label class="HE">אורך תשטוש:</label>
+                                        </td>
+                                        <td>
+                                            <input id="sb_length" value="20" base="20" min=0 max=360 jqui="spiiners" uistep="1" style="width:10px">
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td></td>
+                                        <td>
+                                            <input id="sb_anchor" checked base="true" type="checkbox" style="    vertical-align: middle;"> <label class="EN">Auto align anchor point?</label><label class="HE">יישור אוטומטי של נקודות מקור?</label>
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$('#bs_scale').prop('checked', true);"></td>
+                                    </tr>
+                                </table>
+                            </td>
+                            <td style="background:#2d2d2d; width:300px" >
+                                    <p class="EN" >A simple effect that will generate a spin blur around the anchot point alike photoshop</p>
+                                    <p class="HE">אפקט פשוט שייצר לכם תשטוש סיבובי סביב נקודת המקור, בדומה לפוטושופ</p>
+                            </td>
+                        </tr>
+
+                    </table>
+                    <button id="sb_applay" class="sb_table" onClick="sb_click()"><span class="EN">Apply</span><span class="HE">החל אפקט</span></button>
+
+                </p>
+            </div>
+
+            <h3 class="blur"><label class="EN">Zoom Blur</label><label class="HE">טשטוש זום</label></h3>
+            <div>
+                <p>
+                    <div id="zb_loader" class="progress"><div class="innerload EN">Generating Effect</div><div class="innerload HE">מייצר אפקט</div></div>
+                    <table class="zb_table resizer" width="100%" style="padding: 0; margin: 0;">
+                        <tr>
+                            <td>
+                                <table style=" border-collapse: collapse;	width: 100%;">
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Zoom amount:</label><label class="HE">כמות זום:</label>
+                                        </td>
+                                        <td>
+                                            <input id="zb_spin" value="40" base="40" uimin="0.1" min="0.1" max="500" uimax="500" jqui="spiiners" style="width:30px">°
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Zoom amount value's function:</label><label class="HE">פונקציית ערכים של כמות הזום</label>
+                                        </td>
+                                        <td>
+                                            <input id="zb_func" type="text" mode="function" dir="ltr" placeholder="[1,{x} , Math.sqrt({x}) , {x}/2 , etc..]"><br>
+                                        </td>
+                                        <td>
+                                            <img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[type=function]').val('')">
+
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Blur length:</label> <label class="HE">אורך תשטוש:</label>
+                                        </td>
+                                        <td>
+                                            <input id="zb_length" value="20" base="20" min=0 max=360 jqui="spiiners" uistep="1" style="width:10px">
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td></td>
+                                        <td>
+                                            <input id="zb_anchor" checked base="true" type="checkbox" style="    vertical-align: middle;"> <label class="EN">Auto align anchor point?</label><label class="HE">יישור אוטומטי של נקודות מקור?</label>
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$('#bs_scale').prop('checked', true);"></td>
+                                    </tr>
+                                </table>
+                            </td>
+                            <td style="background:#2d2d2d; width:300px" >
+                                    <p class="EN" >A simple effect that will generate a zoom blur around the anchot point alike photoshop</p>
+                                    <p class="HE">אפקט פשוט שייצר לכם תשטוש זום סביב נקודת המקור, בדומה לפוטושופ</p>
+                            </td>
+                        </tr>
+
+                    </table>
+                    <button id="zb_applay" class="zb_table" onClick="zb_click()"><span class="EN">Apply</span><span class="HE">החל אפקט</span></button>
+
+                </p>
+            </div>
+
+            <h3 class="blur glow"><label class="EN">God Rays</label><label class="HE">קרני אור</label></h3>
+            <div>
+                <p>
+                    <div id="gr_loader" class="progress"><div class="innerload EN">Generating Effect</div><div class="innerload HE">מייצר אפקט</div></div>
+                    <table class="gr_table resizer" width="100%" style="padding: 0; margin: 0;">
+                        <tr>
+                            <td>
+                                <table style=" border-collapse: collapse;	width: 100%;">
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Rays length:</label><label class="HE">אורך קרניים:</label>
+                                        </td>
+                                        <td>
+                                            <input id="gr_spin" value="60" base="60" uimin="0.1" min="0.1" max="500" uimax="500" jqui="spiiners" style="width:40px">° (100=no rays)
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Rays length value's function:</label><label class="HE">פונקציית ערכים של אורך הקרניים</label>
+                                        </td>
+                                        <td>
+                                            <input id="gr_func" type="text" mode="function" dir="ltr" placeholder="[1,{x} , Math.sqrt({x}) , {x}/2 , etc..]"><br>
+                                        </td>
+                                        <td>
+                                            <img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[type=function]').val('')">
+
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Rays details:</label> <label class="HE">דיוק הקרניים:</label>
+                                        </td>
+                                        <td>
+                                            <input id="gr_length" value="20" base="20" min=0 max=360 jqui="spiiners" uistep="1" style="width:30px">
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Light level:</label> <label class="HE">רמת תאורה:</label>
+                                        </td>
+                                        <td>
+                                            <input id="gr_light" value="100" base="100" min=0 uimin=0 max=200 uimax=200 jqui="spiiners" uistep="1" style="width:30px">
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                   
+                                </table>
+                            </td>
+                            <td style="background:#2d2d2d; width:300px" >
+                                    <p class="EN" >Emits rays based on relative light level arround anchor point</p>
+                                    <p class="HE">מייצר קרני אור מבוססות תאורה יחסית מסביב לנקודת האמצע</p>
+                            </td>
+                        </tr>
+
+                    </table>
+                    <button id="gr_applay" class="gr_table" onClick="gr_click()"><span class="EN">Apply</span><span class="HE">החל אפקט</span></button>
+
+                </p>
+            </div>
+
+            <h3 class="audio"><label class="EN">Fast SoundFX</label><label class="HE">אפקטי סאונד במהירות</label></h3>
+            <div>
+                <p>
+                    <table class="ms_table resizer" width="100%" style="padding: 0; margin: 0;">
+                        <tr>
+                            <td>
+
+                                <table style=" border-collapse: collapse;	width: 100%;">
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Marker Color:</label><label class="HE">צבע המרקר:</label>
+                                        </td>
+                                        <td>
+                                            <center id="markerHolder"></center>
+                                            <script>this.RenderMarkers()</script>
+
+                                        </td>
+                                        <td></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">SoundFX Selection:</label> <label class="HE">צליל רקע לבחירה:</label>
+                                        </td>
+                                        <td>
+                                            <center id="markersAudios" class="markersAudios"></center>
+                                            <script>GetAudioFX()</script>
+
+
+                                        </td>
+                                        <td></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Custom Sound:</label><label class="HE">צליל מותאם אישית:</label>
+                                        </td>
+                                        <td>
+                                            <center id="ProjmarkersAudios" class="markersAudios"></center>
+                                            <script>
+                                                $(document).ready(function () { GetProjAudioFX(); })
+                                            </script>
+
+
+                                        </td>
+                                        <td></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Offset:</label><label class="HE">סטייה:</label>
+                                        </td>
+                                        <td>
+                                            <input id="ms_offset" base="50" value="50" max="100" uistep="1" jqui="spiiners" style="width:30px">%
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+                                </table>
+                            </td>
+                            <td style="background:#2d2d2d"><center>
+							<p class="EN">This function will locate your desired marker and will place in the timeline the selected sound FX! all this without overriding your edits. IT IS recommanded to att new audio track right before using it.</p>
+							<p class="HE">הפעולה הבאה תאתר את המרקרים הרצויים ובמיקומם ימוקמו הסאונד אפקט הנבחר! כל זה מבלי לפגוע בעריכה המקורית. ממש מומלץ להוסיף שורת אדיו חדשה לציר הזמן ממש לפני שימוש בפעולה!</p>
+							<p id="markerSts">DATA</p>
+							</center>
+							</td>
+						</tr>
+
+					</table>
+					<button id="bs_applay" class="bs_table" onClick="ms_click()"><span class="EN">Apply</span><span class="HE">החל אפקט</span></button>
+					<button id="bs_reload" class="bs_table" onClick="GetProjAudioFX()"><span class="EN">Rescan project audio</span><span class="HE">סרוק קבצי אדיו מפרוייקט</span></button>
+					<Script>INImarkersCall()</Script>
+                </p>
+            </div>
+			
+            <h3 class="camera" style="opacity:0.5"><label class="EN">Spinner legacy</label><label class="HE">מסובב - גרסה ישנה</label></h3>
+            <div>
+                <p>
+                    <div id="sp_loader" class="progress"><div class="innerload EN">Generating Effect</div><div class="innerload HE">מייצר אפקט</div></div>
+                    <table class="sp_table resizer" width="100%" style="padding: 0; margin: 0;">
+                        <tr>
+                            <td>
+
+                                <table style=" border-collapse: collapse;	width: 100%;">
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Master scale:</label><label class="HE">יחס כללי:</label>
+                                        </td>
+                                        <td>
+                                            <input id="sp_multi" value="100" base="100" jqui="spiiners" style="width:30px">%
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Scale/Horizental⯇⯈:</label><label class="HE">כנה מידה/אופקי⯇⯈:</label>
+                                        </td>
+                                        <td>
+                                            <input id="sp_Horizental" base="100" value="100" uistep="1" jqui="spiiners" style="width:30px">%
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Scale/vertical⯆⯅:</label><label class="HE">כנה מידה/אנכי⯆⯅:</label>
+                                        </td>
+                                        <td>
+                                            <input id="sp_vertical" base="100" value="100" uistep="1" jqui="spiiners" style="width:30px">%
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Spin Speed⯇⯈:</label><label class="HE">מהירות סיבוב⯇⯈:</label>
+                                        </td>
+                                        <td>
+                                            <input id="sp_speed" base="100" value="100" uistep="1" jqui="spiiners" style="width:30px">%
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+
+                                    <tr>
+                                        <td>
+                                            <label class="EN">Addtive speed over time⯇⯈:</label><label class="HE">תוספת מהירות עם הזמן⯇⯈:</label>
+                                        </td>
+                                        <td>
+                                            <input id="sp_speedot" base="100" value="100" uistep="1" jqui="spiiners" style="width:30px">%
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));"></td>
+                                    </tr>
+
+
+                                    <tr>
+                                        <td></td>
+                                        <td>
+                                            <input id="sp_scale" checked base="true" type="checkbox" style="    vertical-align: middle;"> <label class="EN">linear speed(or x^2)</label><label class="HE">עליית מהירות קבועה (או בחזקה)</label>
+                                        </td>
+                                        <td><img class="reseter" src="./css/zero.png" onclick="$('#sp_scale').prop('checked', true);"></td>
+                                    </tr>
+
+
+								<tr>
+								<td>
+									<input id="sp_new" base="false" type="checkbox" style="    vertical-align: middle;"> <label class="EN">Newton pattren</label><label class="HE">תבנית ניוטון</label>
+								</td>
+								<td><img class="reseter" src="./css/zero.png" onclick="$('#sp_new').prop('checked', false);"></td>
+								</tr>
+
+								<tr>
+									<td>
+										<label class="EN">Motion blur:</label><label class="HE">טישטוש מתזוזה:</label>
+									</td>
+									<td>
+										<input id="sp_motion" base="90" value="90" max="180" uistep="1" jqui="spiiners" style="width:20px">/360
+									</td>
+									<td>
+										<img class="reseter" src="./css/zero.png" onclick="$(this).closest('tr').find('[jqui=spiiners]').spinner('value',$(this).closest('tr').find('[jqui=spiiners]').attr('base'));">
+
+									</td>
+								</tr>
+
+
+								</table>
+							</td>
+							<td style="background:#2d2d2d">
+								<center>
+									<p class="HE">האפקט הזה יתן תנועה סיבובית  לקליפ שלכם מבלי להשתמש עם רוטאציה אלה רק לפי מיקום ככה שהקליפ שלכם יסתובב כשהוא נשאר באותה זווית</p>
+									<p class="HE">this FX will give circular motion to ypur clip without changeing its rotation</p>
+								</center>
+							</td>
+						</tr>
+                    </table>
+					
+                    <button id="sp_applay" class="sp_table" onClick="sp_click()"><span class="EN">Apply</span><span class="HE">החל אפקט</span></button>
+                    <button id="sp_preB" class="sp_table" onClick="sp_preview()" style="filter:grayscale(1)"><span class="EN">Preview</span><span class="HE">תצוגה מקדימה</span></button>
+                    <Script>INIspinnerCall()</Script>
+                </p>
+            </div>
+</div>
+</scrolelr>
+
+        <div style="display:none;">
+
+
+
+            <button href="./bitsync/index.html">בדיקה</button>
+            <script>
+                function TEST() {
+                    evalScript('$._PPP_.MarkerTransition("Screen Wipe.wav",0)');
+
+                }
+            </script>
+
+            <hr>
+
+            <button class="controlBg textStyle" id="btn_PPRO58" onClick="evalScript('$._PPP_.findAllAdjustmentLayersInProject()')">Find all adjustment layers</button>
+            <button class="controlBg textStyle" id="btn_PPRO67" onClick="evalScript('$._PPP_.selectAllRetimedClips()')">Select all re-timed clips</button>
+            <button class="controlBg textStyle" id="btn_PPRO68" onClick="evalScript('$._PPP_.selectReversedClips()')">Select all reversed clips</button>
+
+            <hr>
+
+
+            <button id="openfolder">Open panel folder</button>
+            <button id="checkforums">Check SDK Forums</button>
+            <button id="readAPIdocs">Read API documentation</button>
+            <button id="copypresets">Copy Presets</button>
+            <button class="controlBg textStyle" id="btn_PPRO18" onClick="evalScript('$._PPP_.getnumAEProjectItems()')">AE project item count</button>
+            <hr>
+            <button class="controlBg textStyle" id="btn_PPRO27" onClick="evalScript('$._PPP_.randomizeSequenceSelection()')">Randomize sequence selection</button>
+            <button class="controlBg textStyle" id="btn_PPRO29" onClick="evalScript('$._PPP_.onPlayWithKeyframes()')">Manipulate keyframes</button>
+
+
+
+        </div>
+    
+
+
+<Style>
+.ui-selectmenu-menu ,.ui-selectmenu-button 
+{
+	border:solid 1px #fff;
+}
+.ui-menu-item-wrapper
+{
+    text-align: center;
+	}
+</Style>
+</body>
+
+</html>

@@ -1,0 +1,19 @@
+{
+    "version": "1.0.0",
+    "configurations": [
+        {
+            "type": "extendscript-debug",
+            "request": "launch",
+            "name": "Premiere",
+            "program": "${workspaceRoot}/jsx/PPRO/Premiere.jsx",
+            "stopOnEntry": true
+        },
+        {
+            "type": "chrome",
+            "request": "attach",
+            "name": "Attach to Chrome",
+            "port": 7777,
+            "webRoot": "${workspaceRoot}"
+        }
+    ]
+}

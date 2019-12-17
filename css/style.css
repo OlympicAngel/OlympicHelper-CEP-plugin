@@ -1,0 +1,347 @@
+/*************************************************************************
+* ADOBE CONFIDENTIAL
+* ___________________
+*
+* Copyright 2014 Adobe
+* All Rights Reserved.
+*
+* NOTICE: Adobe permits you to use, modify, and distribute this file in
+* accordance with the terms of the Adobe license agreement accompanying
+* it. If you have received this file from a source other than Adobe,
+* then your use, modification, or distribution of it requires the prior
+* written permission of Adobe. 
+**************************************************************************/
+
+@import url('https://fonts.googleapis.com/css?family=Heebo');
+
+.markerlablel
+	{
+	    border: solid 1px rgba(0, 0, 0, 0.39);
+	  display: inline-block; margin: 3px; font-size: 2em; border-radius: 50px 50px 1000% 1000%; padding: 0.8em 0.30em; filter: drop-shadow(1px 4px 3px #000); 
+	  transition:0.5s
+	}
+	
+	#markerHolder{min-width:195px;}
+	
+	#markerHolder input[type="radio"]
+	{
+	display:none;
+	}
+	
+	#markerHolder input[type="radio"]:checked+label
+	{
+	margin:3px 15px;
+	box-shadow:0px 0px 10px,0px 0px 10px,0px 0px 20px,0px 0px 30px,0px 0px 40px;
+	}
+
+.audiolablel
+	{
+	display:inline-block;
+	 margin:10px 10px;
+	 padding:5px;
+	 border:solid gray 2px;
+	 border-radius: 15px;
+	 box-shadow:0px 0px 10px blue,0px 0px 0px ,0px 0px 0px ,inset 0px   0px 0px #0052bf;
+	 color: #fff;
+	 transition:1s;
+	   -webkit-user-select: none;
+	   
+
+    max-width: 120px;
+    white-space: pre;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: top;
+	}
+	
+	.markersAudios{min-width:300px;}
+	
+	.markersAudios input[type="radio"]
+	{
+	display:none;
+	}
+	
+	.markersAudios input[type="radio"]:checked+label , #ProjmarkersAudios input[type="radio"]:checked+label
+	{
+	box-shadow:0px 0px 10px, 0px 0px 10px, 0px 0px 20px, inset 140px 0 0px -10px rgb(0, 144, 228);
+	}
+	
+		.markersAudios input[type="radio"]:checked+label{border-color:cyan;}
+	#ProjmarkersAudios input[type="radio"]:checked+label{border-color:#fff;}
+
+.ui-widget-overlay
+{
+	background: #ffffff !important;
+    opacity: 0.6 !important;
+}
+
+.progress .innerload
+{
+    position: absolute;
+    left: calc( 50% - 134px);
+    top: 0px;
+    font-weight: bold;
+    font-family: "heebo thin";
+    font-size: 18px;
+    color: green;
+ 
+}
+
+.ui-progressbar-overlay
+{
+	    background-color: #ff6000 !important;
+}
+
+.progress 
+{
+	    box-shadow: 0px 0px 30px green;
+		 position: relative;
+}
+
+.ui-spinner-input{color:#00a4e4 !important}
+.ui-spinner-input:focus{background:#fff !important; color:#000 !important; text-shadow:0px 0px 0px !important;transition:0.5s}
+.ui-accordion .ui-accordion-content
+{
+padding: 0em 0.2em !important;
+}
+table tr{
+	border-bottom: 1px #3e3e3e solid;
+
+}
+
+table tr,table td,table{
+	padding: 0;
+    margin: 0;
+}
+
+table td:nth-child(3)
+{
+	    text-align: right;
+		padding-right:5px;
+}
+
+.reseter
+{
+    mix-blend-mode: lighten;
+    cursor: pointer;
+	 border: solid 1px rgb(0,0,0);
+}
+
+.reseter:hover
+{
+	    filter: brightness(1.3);
+    border: solid 1px rgb(60,60,60);
+    border-radius: 2px;
+    transition: 0.4s;
+}
+
+button{
+	
+	border-radius:15px;
+	padding:4px;
+	background:#00a4e4;
+	border:2px solid #131313;
+	margin:2px;
+	color: #fff;
+	outline:none;
+	transition:2s;
+		box-shadow: inset 0px 0px 5px rgba(0,0,0,.5);
+}
+
+button:hover
+{
+	color: #00a4e4;
+	box-shadow: inset 0px 0px 30px 10px #484848;
+	border-color:#000;
+	text-shadow:1px 1px 3px rgba(0,0,0,1);
+	transition:0.2s;
+}
+
+button:active
+{
+	transform:scale(1.05);
+}
+
+*
+{
+	text-shadow:1px 1px 3px rgba(0,0,0,0.7);
+	
+}
+
+body{
+	
+	color: lightgray;
+	font-family:Segoe UI,Tahoma !important;
+	text-shadow:1px 1px 3px rgba(0,0,0,0.7);
+	overflow:hidden;
+	font-size:11px;
+}
+
+scrolelr
+{
+    width: calc( 100vw - 27px );
+    max-height: 97vh;
+    overflow: overlay;
+    margin: 0;
+    display: block;
+	padding-right:13px;
+}
+
+*::-webkit-scrollbar-track
+{
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+    border-radius: 10px;
+    background-color: #131313;
+    border: 1px solid #333333;
+}
+
+*::-webkit-scrollbar
+{
+	width: 12px;
+}
+
+*::-webkit-scrollbar-thumb
+{
+    border-radius: 100px;
+    -webkit-box-shadow: inset 0 0 11px 1px rgba(0,0,0,.3);
+    background-color: #484848;
+    border: 1px solid transparent;
+}
+
+
+div.title
+{
+    background-image: url(../css/tinyme.png);
+    position: fixed;
+    background-repeat: no-repeat;
+    background-size: contain;
+    height: 41px;
+    width: calc(40% - 70px);
+    top: 0;
+    text-align: -webkit-left;
+    font-size: 22px;
+    padding-left: 93px;
+    text-shadow: 1px 1px 7px #000;
+    font-weight: 800;
+    letter-spacing: 2px;
+    z-index: 1;
+    color: #fff;
+    line-height: 18px;
+    transition: 0.3s, transform 0.1s;
+    margin: 0 60%;
+}
+
+div.title:hover
+{
+	text-shadow:0px 0px 5px red,0px 0px 15px #fff;
+}
+
+div.title:hover p
+{
+	
+	text-shadow:0px 0px 10px red,0px 0px 12px red,0px 0px 14px red,0px 0px 20px #fff,0px 0px 20px #fff,0px 0px 20px #fff;
+}
+
+div.title:active
+{
+	transform: translate(38px) scale(1.1);
+}
+
+div.title p
+{
+	transition:0.3s;
+	font-weight: 100;
+    font-size: 50%;
+    line-height: 0;
+    margin-left: 19px;
+    letter-spacing: 5.5px;
+    word-spacing: 6px;
+}
+
+button
+{
+	z-index: 2;
+	position: relative;
+}
+
+div.title.right
+{
+	padding-left: 0px !important;
+    padding-right: 93px;
+    text-align: -webkit-right;
+    background-position: right;
+}
+
+input[mode=function]
+{
+	width: calc(100% - 30px);
+    background: #3a3a3a;
+    color: #ffffff;
+    border: #3d90de solid 1.4px;
+    border-radius: 3px;
+    margin: 3px 0px;
+    padding: 3px;
+    font-size: 14px;
+	margin: 10px;
+	transition:0.3s;
+}
+
+input[mode=function]:focus
+{
+    background: #fff;
+    color: #000;
+    border: #3d90de solid 1.4px;
+
+}
+
+span, label, pre , p, .title , tag
+{ user-select: none;}
+
+
+img ::selection ,button ::selection, a ::selection ,  label ::selection, p ::selection, .title ::selection 
+{ background: transparent; }
+
+input ::selection{ background: red; }
+
+
+
+
+center#selection label
+{
+	margin:3px;
+	vertical-align: top;
+	border: rgb(0, 144, 228) 1px solid;
+	padding:2px 8px;
+	border-radius: 5px;
+}
+center#selection label span
+{ 
+vertical-align: top;
+}
+
+center#selection label:hover
+{
+	background:rgb(70,70,70);
+}
+
+center#selection label:active
+{
+	color:#fff;
+	background: #3d90de;
+}
+
+tag
+{
+	color:#fff;
+	background: #3d90de;
+	border-radius: 5px;
+	padding: 1px 3px;
+	margin:0 3px;
+	opacity: 0.9;
+	letter-spacing: 1px;
+}
+
+au{
+	position: absolute;
+	left:0;
+}
