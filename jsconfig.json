@@ -1,8 +1,8 @@
 {
     "compilerOptions": {
       "module": "none",
-      "target": "ES3",
-      "noLib": true,
+      "target": "ES5",
+      "noLib": false,
       "checkJs": true
     }
 }
