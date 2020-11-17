@@ -1,6 +1,8 @@
-#include "PPro_API_Constants.jsx";
+//#include "PPro_API_Constants.jsx";
 //#include "JSON.jsx";
 //app.setSDKEventMessage(JSON.stringify(currentSeq.getPlayerPosition()));
+
+
 var allowedAudio = ["mp3", "wav", "sgg", "aac", "3gp", "AIF", "M4A", "OMF"];
 
 function isInFormatAudio(str) {
@@ -12,6 +14,7 @@ function isInFormatAudio(str) {
     }
     return false;
 }
+
 
 $._PPP_ = {
 
@@ -58,7 +61,7 @@ $._PPP_ = {
 		
 		var fx = qe.project.getVideoEffectByName(effctName);
 		if(times == null || times == undefined)
-			var times = 1;
+			times = 1;
 		var couldPlace = true;
 		for(var x = 0; x < times; x++)
 		 clipToAdd.addVideoEffect(fx,false);
@@ -111,7 +114,7 @@ $._PPP_ = {
     },
     rndRange: function (x) { return 0.5 - x + Math.random() * (2 * x); },
     GetAllSelectedClipsV: function () {
-        var seq = app.project.activeSequence;
+        var seq = this.global.currentSeq;
 
         var clipArray = [];
         var trcksC = 0, clipC = 0;
@@ -214,18 +217,24 @@ $._PPP_ = {
     Alert: function (realAlert, sideAlert, alertText) {
         if (sideAlert) app.setSDKEventMessage(alertText, "error");
 
-        if (realAlert) alert(alertText, "OlympicHelper: There is a problem :(");
-
+        if (realAlert) alert(alertText, "OlympicHelper:");
     },
 
     wiggle:function( freq, amp, t ,type)
     {
         freq = freq / 10;
-        amp = amp / 100;
+        amp = amp;
+
+        if(this.global.wiggleX == undefined)
+            this.global.wiggleX = new perlin();
+
+        if(this.global.wiggleY == undefined)
+            this.global.wiggleY = new perlin();
+
         if(type == "x" || type == "X")
-             return perlin.get(t*freq,4) * amp;
+             return this.global.wiggleX.get(t*freq,4) * amp;
         else
-             return perlin2.get(t*freq,4) * amp;
+             return this.global.wiggleY.get(t*freq,4) * amp;
 
     },
 
@@ -478,44 +487,7 @@ $._PPP_ = {
             alert("there is not selected clip, please select one and retry.")
         }
     },
-    BaseShake: function (multi, rate, horizental, vertical, isAuto, shutter, isHEB) {
-        var currentSeq = app.project.activeSequence;
-        var timebase = currentSeq.timebase;
-        var t = new Time();
-        var slectedClips = this.GetAllSelectedClipsV();
-        t.ticks = timebase;
-        var keyframeRatio = t.seconds * rate;
-        for (var i = 0; i < slectedClips.length; i++) {
-            var tansformFX = this.GetEffectFromClip(slectedClips[i],"Transform","baseShake");
 
-            var clipTimeStart = slectedClips[i].inPoint.seconds;
-            var clipLength = slectedClips[i].duration.seconds;
-
-            var properties = tansformFX.properties;
-            var shutterSpeed = properties[10];
-            shutterSpeed.setValue(shutter, true);
-
-            var scaleRatio = properties[2];
-            scaleRatio.setValue(true,true);
-            var scale = properties[3];
-            if (isAuto)
-                 scale.setValue((1 + multi * 2 * (Math.max(horizental, vertical))) * 100, true);
-            var position = properties[1];
-            this.ResetKeyframes(position,true);
-            
-            for (var k = clipTimeStart; k < clipLength + clipTimeStart + keyframeRatio; k = k + keyframeRatio) 
-            {
-                t.seconds = k;
-                position.addKey(t);
-                position.setValueAtKey(t, [this.rndRange(multi * vertical), this.rndRange(multi * horizental)],  k >= clipLength + clipTimeStart);
-                position.setInterpolationTypeAtKey(t, 3);
-            }
-        }
-        if (slectedClips.length == 0)
-            this.Alert(true,true,"there is not selected clip, please select one and retry.");
-
-        return true;
-    },
     MarkerTransition: function (clipName, colorIndex, offset, path) {
 
         var currentSeq = app.project.activeSequence;
@@ -967,51 +939,142 @@ $._PPP_ = {
 		}	
     },
 
-    CameraMovement: function (multi, rate, horizental, vertical, isAuto, shutter) {
-        multi = multi*1000;
-        horizental = horizental * 200;
-        vertical = vertical* 200;
+    //#region renew
+    global: {frameTime:undefined,currentSeq:undefined,wiggleX:undefined, wiggleY:undefined},
 
-        var currentSeq = app.project.activeSequence;
-        var timebase = currentSeq.timebase;
-        var t = new Time();
+    BaseApplyFX: function(callback)
+    {
+        this.GetClipFrameTime();
         var slectedClips = this.GetAllSelectedClipsV();
-        t.ticks = timebase;
-        var keyframeRatio = t.seconds;
-        for (var i = 0; i < slectedClips.length; i++) 
+        if (slectedClips.length == 0)
+            return this.Alert(true,true,"there is not selected clip, please select one and retry.");
+
+         for (var i = 0; i < slectedClips.length; i++) 
         {
-            var tansformFX = this.GetEffectFromClip(slectedClips[i],"Transform","cameraMovement");
+            callback.call(this,slectedClips[i]);
+        }
+    },
 
-            var clipTimeStart = slectedClips[i].inPoint.seconds;
-            var clipLength = slectedClips[i].duration.seconds;
+    GetClipFrameTime: function()
+    {
+        if(app.project == undefined)
+        throw "1"
+        if(app.project.activeSequence == undefined)
+        throw "2"
+        this.global.currentSeq = app.project.activeSequence;
+        var timebase = this.global.currentSeq.timebase;
+        var t = new Time();
+        t.ticks = timebase;
+        this.global.frameTime = t.seconds;
 
+        return this.global.frameTime;
+    },
+
+    FxGetUserKeyframe: function(fxKeys, timefromClipStart)
+    {
+        var hashKey = Math.floor(timefromClipStart*120);
+        var maxKey = fxKeys.max;
+        if(hashKey > maxKey)
+            hashKey = maxKey;
+        return fxKeys[hashKey];
+    },
+
+    CameraMovement: function (multi, rate, horizental, vertical, isAuto, shutter) {
+       this.BaseApplyFX(function(slectedClip){
+            debugger;
+            
+            var tansformFX = this.GetEffectFromClip(slectedClip,"Transform","cameraMovement");
+            var clipTimeStart = slectedClip.inPoint.seconds;
+            var clipLength = slectedClip.duration.seconds;
             var properties = tansformFX.properties;
             var shutterSpeed = properties[10];
-            shutterSpeed.setValue(shutter, true);
+            shutterSpeed.setValue(shutter["0"], true);
             var scaleRatio = properties[2];
             scaleRatio.setValue(true,true);
+
             var scale = properties[3];
-            if (isAuto)
-                scale.setValue((100 + multi * (Math.max(horizental/100, vertical/100))), true);
-                
+            this.ResetKeyframes(scale,true);
             var position = properties[1];
             this.ResetKeyframes(position,true);
-            for (var k = clipTimeStart; k < clipLength + clipTimeStart + keyframeRatio; k = k + keyframeRatio) 
+            var t = new Time();
+            for (var k = clipTimeStart; k < clipLength + clipTimeStart + this.global.frameTime; k = k + this.global.frameTime) 
             {
+                 var timefromClipStart = k - clipTimeStart;
                  t.seconds = k;
                  position.addKey(t);
-
-                 var newPositionX =   0.5 + this.wiggle( rate, multi * vertical / 100, t.seconds ,"x");
-                 var newPositionY =   0.5 + this.wiggle( rate, multi * horizental / 100, t.seconds ,"y");
+                scale.addKey(t);
+            
+                 var multiFrame =  this.FxGetUserKeyframe(multi,timefromClipStart)/100;
+                 var verticalFrame =  this.FxGetUserKeyframe(vertical,timefromClipStart)/200;
+                 var horizentalFrame =  this.FxGetUserKeyframe(horizental,timefromClipStart)/200;
+                 var newPositionX =   0.5 + this.wiggle( rate["0"]/3, multiFrame * verticalFrame, t.seconds ,"x"); 
+                 var newPositionY =   0.5 + this.wiggle( rate["0"]/3, multiFrame * horizentalFrame, t.seconds ,"y");
+                 if(isNaN(newPositionX))
+                 {
+                     throw "sdfd";
+                 }
+                if(isAuto["0"] == 1)
+                {
+                    scale.setValueAtKey(t,(100 +  multiFrame * 1000 * (Math.max(Math.abs(0.5 - newPositionX), Math.abs(0.5 - newPositionY)))), k >= clipLength + clipTimeStart);
+                }
+                else
+                {
+                    scale.setValueAtKey(t,(100 + multiFrame * 100 * (Math.max(horizentalFrame, verticalFrame)*2)), k >= clipLength + clipTimeStart);
+                }
                  position.setValueAtKey(t, [newPositionX, newPositionY], k >= clipLength + clipTimeStart);
-                 position.setInterpolationTypeAtKey(t, 3);
             }
-            perlin.seed();
-            perlin2.seed();
-        }
-        if (slectedClips.length == 0)
-            this.Alert(true,true,"there is not selected clip, please select one and retry.");
+            this.global.wiggleX = undefined;
+            this.global.wiggleY = undefined;
+       });
+
     },
+
+    BaseShake: function (multi, rate, horizental, vertical, isAuto, shutter) {
+       this.BaseApplyFX(function(slectedClip){
+
+            var tansformFX = this.GetEffectFromClip(slectedClip,"Transform","baseShake");
+            var clipTimeStart = slectedClip.inPoint.seconds;
+            var clipLength = slectedClip.duration.seconds;
+            var properties = tansformFX.properties;
+            var shutterSpeed = properties[10];
+            shutterSpeed.setValue(shutter["0"], true);
+            var scaleRatio = properties[2];
+            scaleRatio.setValue(true,true);
+
+            var scale = properties[3]; 
+            this.ResetKeyframes(scale,true);
+            var position = properties[1];
+            this.ResetKeyframes(position,true);
+            var t = new Time();
+            for (var k = clipTimeStart; k < clipLength + clipTimeStart + this.global.frameTime * rate["0"]; k = k + this.global.frameTime * rate["0"]) 
+            {
+                 var timefromClipStart = k - clipTimeStart;
+                 t.seconds = k;
+                 position.addKey(t);
+                 scale.addKey(t);
+
+                 var multiFrame =  this.FxGetUserKeyframe(multi,timefromClipStart)/100;
+                 var verticalFrame =  this.FxGetUserKeyframe(vertical,timefromClipStart)/200;
+                 var horizentalFrame =  this.FxGetUserKeyframe(horizental,timefromClipStart)/200;
+                 var x = this.rndRange(multiFrame * verticalFrame);
+                 var y = this.rndRange(multiFrame * horizentalFrame);
+
+                if(isAuto["0"] == 1)
+                {
+                    scale.setValueAtKey(t,(100 +  multiFrame * 1000 * (Math.max(Math.abs(0.5 - x), Math.abs(0.5 - y)))), k >= clipLength + clipTimeStart);
+                }
+                else
+                {
+                    scale.setValueAtKey(t,(100 + multiFrame * 100 * (Math.max(horizentalFrame, verticalFrame)*2)), k >= clipLength + clipTimeStart);
+                }
+                 position.setValueAtKey(t, [x,y],  k >= clipLength + clipTimeStart);
+            }
+            this.global.wiggleX = undefined;
+            this.global.wiggleY = undefined;
+       });
+    },
+    //#endregion
+
 
     SpinBlur: function(SpinAmount,blurLength,AutoCenter,func){
         if(func == null || func=="" || func == " ")
@@ -1397,6 +1460,11 @@ $._PPP_ = {
 
 };
 
+
+//$._PPP_.CameraMovement({"158":0,"160":0.46707895491869555,"162":0.7602209828323749,"164":1.0247973161561845,"166":1.2746011766838778,"168":1.51497616351387,"170":1.7486620165059181,"172":1.9772858123061219,"174":2.201907396531606,"176":2.4232627500788135,"178":2.6418876029377185,"180":2.8581862915544787,"182":3.072472873538248,"184":3.284997048226451,"186":3.49596122925143,"188":3.7055322021394685,"190":3.9138493287737988,"192":4.121030472130349,"194":4.327176370717768,"196":4.532373931406532,"198":4.7366987505576255,"200":4.940217073590911,"202":5.142987338683169,"204":5.345061407620502,"206":5.546485557962399,"208":5.747301290756138,"210":5.947545994050664,"212":6.147253492474605,"214":6.346454505911677,"216":6.545177034998526,"218":6.743446687225212,"220":6.941286954453121,"222":7.138719450412584,"224":7.335764115014479,"226":7.532439390972287,"228":7.728762377186707,"230":7.9247489625231005,"232":8.120413942960145,"234":8.315771124567991,"236":8.510833414355837,"238":8.705612900690797,"240":8.900120924714718,"242":9.09436814396061,"244":9.288364589185296,"246":9.482119715281936,"248":9.675642447009134,"250":9.868941220167322,"252":10.062024018764513,"254":10.254898408638788,"256":10.447571567941866,"258":10.64005031483471,"260":10.832341132700778,"262":11.024450193143473,"264":11.21638337700145,"266":11.408146293586768,"268":11.599744298326208,"270":11.791182508964978,"272":11.982465820473568,"274":12.1735989187825,"276":12.364586293455783,"278":12.555432249401797,"280":12.746140917709518,"282":12.936716265688815,"284":13.127162106185262,"286":13.317482106232589,"288":13.507679795099662,"290":13.697758571783046,"292":13.88772171199133,"294":14.077572374662799,"296":14.267313608054197,"298":14.456948355434731,"300":14.646479460416218,"302":14.835909671947608,"304":15.025241648999492,"306":15.214477964961882,"308":15.4036211117767,"310":15.59267350382422,"312":15.78163748158152,"314":15.970515315069003,"316":16.159309207100137,"318":16.348021296347998,"320":16.536653660241303,"322":16.725208317701483,"324":16.91368723173156,"326":17.102092311866564,"328":17.290425416494678,"330":17.478688355057514,"332":17.666882890137167,"334":17.855010739437425,"336":18.04307357766559,"338":18.231073038321274,"340":18.419010715397768,"342":18.606888165001372,"344":18.794706906893605,"346":18.982468425960995,"348":19.170174173616537,"350":19.357825569137095,"352":19.545424000940187,"354":19.732970827803918,"356":19.92046738003304,"358":20.107914960574426,"360":20.29531484608468,"362":20.482668287952468,"364":20.6699765132783,"366":20.857240725813888,"368":21.04446210686339,"370":21.23164181614854,"372":21.418780992639718,"374":21.60588075535461,"376":21.792942204126348,"378":21.979966420342627,"380":22.166954467657405,"382":22.353907392676557,"384":22.540826225618876,"386":22.72771198095372,"388":22.91456565801648,"390":23.10138824160302,"392":23.288180702544185,"394":23.474943998261406,"396":23.661679073304438,"398":23.848386859871937,"400":24.035068278316093,"402":24.221724237631765,"404":24.408355635931347,"406":24.594963360905677,"408":24.78154829027202,"410":24.9681112922097,"412":25.154653225784035,"414":25.34117494135918,"416":25.527677281000564,"418":25.714161078867363,"420":25.900627161595693,"422":26.08707634867293,"424":26.273509452803737,"426":26.45992728026825,"428":26.646330631272946,"430":26.832720300294522,"432":27.019097076417314,"434":27.205461743664756,"436":27.391815081325003,"438":27.57815786427147,"440":27.76449086327836,"442":27.95081484533179,"444":28.137130573936684,"446":28.32343880941993,"448":28.509740309230036,"450":28.696035828233732,"452":28.882326119009743,"454":29.068611932140108,"456":29.254894016499378,"458":29.441173119541943,"460":29.62744998758792,"462":29.81372536610773,"464":30.00000000000589,"466":30.186274633904016,"468":30.372550012423837,"470":30.55882688046981,"472":30.745105983512392,"474":30.931388067871648,"476":31.11767388100201,"478":31.303964171778027,"480":31.49025969078171,"482":31.676561190591826,"484":31.86286942607506,"486":32.04918515467995,"488":32.235509136733384,"490":32.421842135740285,"492":32.608184918686746,"494":32.79453825634699,"496":32.98090292359442,"498":33.167279699717234,"500":33.3536693687388,"502":33.5400727197435,"504":33.72649054720802,"506":33.912923651338836,"508":34.09937283841606,"510":34.285838921144396,"512":34.472322719011196,"514":34.65882505865258,"516":34.84534677422773,"518":35.03188870780206,"520":35.218451709739746,"522":35.40503663910609,"524":35.591644364080416,"526":35.778275762380005,"528":35.964931721695685,"530":36.15161314013983,"532":36.33832092670733,"534":36.525056001750364,"536":36.7118192974676,"538":36.89861175840875,"540":37.08543434199529,"542":37.27228801905806,"544":37.459173774392895,"546":37.64609260733523,"548":37.83304553235437,"550":38.02003357966917,"552":38.20705779588545,"554":38.39411924465718,"556":38.58121900737207,"558":38.768358183863256,"560":38.9555378931484,"562":39.14275927419791,"564":39.3300234867335,"566":39.517331712059345,"568":39.704685153927116,"570":39.89208503943738,"572":40.07953261997878,"574":40.267029172207906,"576":40.45457599907163,"578":40.642174430874725,"580":40.82982582639528,"582":41.01753157405083,"584":41.20529309311824,"586":41.39311183501048,"588":41.58098928461407,"590":41.76892696169056,"592":41.956926422346264,"594":42.14498926057443,"596":42.33311710987469,"598":42.52131164495435,"600":42.70957458351719,"602":42.89790768814532,"604":43.08631276828031,"606":43.27479168231041,"608":43.46334633977059,"610":43.6519787036639,"612":43.84069079291175,"614":44.0294846849429,"616":44.218362518430396,"618":44.407326496187686,"620":44.59637888823523,"622":44.78552203505004,"624":44.97475835101243,"626":45.16409032806432,"628":45.35352053959573,"630":45.54305164457721,"632":45.73268639195776,"634":45.922427625349165,"636":46.11227828802063,"638":46.30224142822892,"640":46.492320204912325,"642":46.68251789377941,"644":46.87283789382675,"646":47.06328373432319,"648":47.2538590823025,"650":47.44456775061022,"652":47.63541370655625,"654":47.82640108122954,"656":48.01753417953849,"658":48.208817491047085,"660":48.40025570168586,"662":48.59185370642532,"664":48.783616623010644,"666":48.975549806868635,"668":49.167658867311324,"670":49.35994968517742,"672":49.55242843207028,"674":49.74510159137336,"676":49.93797598124765,"678":50.13105877984485,"680":50.32435755300306,"682":50.517880284730275,"684":50.711635410826915,"686":50.90563185605162,"688":51.09987907529754,"690":51.29438709932148,"692":51.48916658565646,"694":51.68422887544431,"696":51.87958605705219,"698":52.07525103748925,"700":52.271237622825666,"702":52.46756060904013,"704":52.66423588499794,"706":52.861280549599876,"708":53.058713045559365,"710":53.2565533127873,"712":53.45482296501401,"714":53.653545494100904,"716":53.852746507538,"718":54.05245400596199,"720":54.25269870925655,"722":54.45351444205032,"724":54.65493859239227,"726":54.85701266132965,"728":55.05978292642196,"730":55.26330124945528,"732":55.467626068606435,"734":55.67282362929526,"736":55.87896952788275,"738":56.086150671239366,"740":56.29446779787377,"742":56.50403877076191,"744":56.71500295178698,"746":56.92752712647529,"748":57.14181370845917,"750":57.35811239707607,"752":57.576737249935135,"754":57.79809260348254,"756":58.02271418770825,"758":58.25133798350874,"760":58.485023836501156,"762":58.725398823331645,"764":58.97520268386008,"766":59.239779017185214,"768":59.53292104511328,"770":60,"772":60,"max":772},{"0":50,"max":0},{"0":100,"max":0},{"0":100,"max":0},{"0":0,"max":0},{"0":180,"max":0})
+
+
+
 function ObjToString(str, count) {
     return ToString(str, count);
 }
@@ -1472,13 +1540,13 @@ function ToString(str, count) {
 
 
 
-'use strict';
-perlin = {
-    rand_vect: function(){
+function perlin()
+{
+    this.rand_vect = function(){
         var theta = Math.random() * 2 * Math.PI;
         return {x: Math.cos(theta), y: Math.sin(theta)};
-    },
-    dot_prod_grid: function(x, y, vx, vy){
+    };
+    this.dot_prod_grid = function(x, y, vx, vy){
         var g_vect;
         var d_vect = {x: x - vx, y: y - vy};
         if (this.gradients[[vx,vy]]){
@@ -1488,17 +1556,17 @@ perlin = {
             this.gradients[[vx, vy]] = g_vect;
         }
         return d_vect.x * g_vect.x + d_vect.y * g_vect.y;
-    },
-    smootherstep: function(x){
+    };
+    this.smootherstep = function(x){
         return 6*Math.pow(x,5) - 15*Math.pow(x,4) + 10*Math.pow(x,3);
-    },
-    interp: function(x, a, b){
+    };
+    this.interp = function(x, a, b){
         return a + this.smootherstep(x) * (b-a);
-    },
-    seed: function(){
+    };
+    this.seed = function(){
         this.gradients = {};
-    },
-    get: function(x, y) {
+    };
+    this.get = function(x, y) {
         var xf = Math.floor(x);
         var yf = Math.floor(y);
         //interpolate
@@ -1509,9 +1577,9 @@ perlin = {
         var xt = this.interp(x-xf, tl, tr);
         var xb = this.interp(x-xf, bl, br);
         return this.interp(y-yf, xt, xb);
-    }
+    };
+    this.seed();
 };
-perlin.seed();
 
 'use strict';
 perlin2 = {

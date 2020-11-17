@@ -4,7 +4,7 @@
 ExtensionBundleName="OlympicAngel.OlympicHelper" 
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<ExtensionList>
-		<Extension Id="com.OlympicAngel.OlympicHelper" Version="0.3.0" />
+		<Extension Id="com.OlympicAngel.OlympicHelper" Version="2.0.0" />
 	</ExtensionList>
 	<ExecutionEnvironment>
 		<HostList>
@@ -39,7 +39,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 					<Geometry>
 						<Size>
 							<Height>300</Height>
-							<Width>300</Width>
+							<Width>500</Width>
 						</Size>
 					</Geometry>
 				</UI>

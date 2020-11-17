@@ -2,7 +2,7 @@
 <ExtensionList>
     <Extension Id="com.OlympicAngel.OlympicHelper">
         <HostList>
-            <Host Name="PPRO" Port="7777"/>
+            <Host Name="PPRO" Port="7776"/>
         </HostList>
     </Extension>
 </ExtensionList>

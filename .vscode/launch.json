@@ -1,18 +1,20 @@
 {
-    "version": "1.0.0",
+    "version": "0.2.0",
     "configurations": [
         {
             "type": "extendscript-debug",
             "request": "launch",
-            "name": "Premiere",
-            "program": "${workspaceRoot}/jsx/PPRO/Premiere.jsx",
-            "stopOnEntry": true
+            "name": "Debug in PPro",
+            "program": "${workspaceFolder}/jsx/PPRO/Premiere.jsx",
+            "stopOnEntry": false,
+            "trace": true,
+            "selectTargetColor": "blue"
         },
         {
             "type": "chrome",
             "request": "attach",
             "name": "Attach to Chrome",
-            "port": 7777,
+            "port": 7776,
             "webRoot": "${workspaceRoot}"
         }
     ]
