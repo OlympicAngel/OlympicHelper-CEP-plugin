@@ -17,58 +17,51 @@ function isInFormatAudio(str) {
 
 
 $._PPP_ = {
+    AddFXDataTrack: null,
+    AddFXDataPosit: null,
+    AddFXDataOldPos: null,
+    global: { frameTime: undefined, currentSeq: undefined, wiggleX: undefined, wiggleY: undefined },
 
-    AddFXDataTrack : null,
-	AddFXDataPosit : null,
-	AddFXDataOldPos : null,
+    //#region helper functions
+    AddEffect: function (effctName, track, position, times, fromSeq) {
+        try {
+            var openedSeqID = app.project.activeSequence.sequenceID;
+            if (fromSeq)
+                app.project.openSequence(fromSeq.sequenceID);
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////helper functions START
+            app.enableQE();
+            var seq = qe.project.getActiveSequence();
+
+            if (fromSeq)
+                app.project.openSequence(openedSeqID);
+
+            var videoTrack = seq.getVideoTrackAt(track);
+            var CountClips = 0;
+            var clipToAdd;
 
 
+            for (var i = 0; i < videoTrack.numItems; i++) {
 
-	AddEffect: function (effctName,track, position,times) {
-	  try
-	  {
-		app.enableQE();
-		var seq = qe.project.getActiveSequence();
-		var videoTrack = seq.getVideoTrackAt(track);
-		var CountClips = 0;
-		var clipToAdd;
-		
-		if(this.AddFXDataOldPos == position && this.AddFXDataTrack == track)
-		{clipToAdd = videoTrack.getItemAt(this.AddFXDataPosit);}
-		else
-		  {
-			for(var i = 0; i < videoTrack.numItems; i++)
-			{
-				
-				var TrackItem =  videoTrack.getItemAt(i);
-				if(TrackItem.type == 'Clip')
-				{
-					if(CountClips == position)
-					{clipToAdd = TrackItem;break;}
-					else
-						CountClips++;
-				}
-			}
-			if(clipToAdd == null)
-				return "could not find clip at position";
-			
-			this.AddFXDataTrack = track;
-			this.AddFXDataPosit = i;
-			this.AddFXDataOldPos = position;
-		  }
-		
-		var fx = qe.project.getVideoEffectByName(effctName);
-		if(times == null || times == undefined)
-			times = 1;
-		var couldPlace = true;
-		for(var x = 0; x < times; x++)
-		 clipToAdd.addVideoEffect(fx,false);
+                var TrackItem = videoTrack.getItemAt(i);
+                if (TrackItem.type == 'Clip') {
+                    if (CountClips == position) { clipToAdd = TrackItem; break; }
+                    else
+                        CountClips++;
+                }
+            }
+            if (clipToAdd == undefined)
+                return "could not find clip at position";
 
-	  }catch(err){
-		  return err ;
-	  }
+
+            var fx = qe.project.getVideoEffectByName(effctName);
+            if (times == null || times == undefined)
+                times = 1;
+            for (var x = 0; x < times; x++)
+                clipToAdd.addVideoEffect(fx, false);
+
+        } catch (err) {
+            throw err;
+        }
     },
     scanProjectAudio: function () {
 
@@ -127,8 +120,8 @@ $._PPP_ = {
                 clipC++;
                 var firstClip = firstVideoTrack.clips[i]
                 if (firstClip.isSelected()) {
-					firstClip.trackNum = s;
-					firstClip.clipNum = i;
+                    firstClip.trackNum = s;
+                    firstClip.clipNum = i;
                     clipArray.push(firstClip);
                 }
             }
@@ -219,105 +212,150 @@ $._PPP_ = {
 
         if (realAlert) alert(alertText, "OlympicHelper:");
     },
-
-    wiggle:function( freq, amp, t ,type)
-    {
+    wiggle: function (freq, amp, t, type) {
         freq = freq / 10;
         amp = amp;
 
-        if(this.global.wiggleX == undefined)
+        if (this.global.wiggleX == undefined)
             this.global.wiggleX = new perlin();
 
-        if(this.global.wiggleY == undefined)
+        if (this.global.wiggleY == undefined)
             this.global.wiggleY = new perlin();
 
-        if(type == "x" || type == "X")
-             return this.global.wiggleX.get(t*freq,4) * amp;
+        if (type == "x" || type == "X")
+            return this.global.wiggleX.get(t * freq, 4) * amp;
         else
-             return this.global.wiggleY.get(t*freq,4) * amp;
+            return this.global.wiggleY.get(t * freq, 4) * amp;
 
     },
-
-    IsCustomFX: function(Effect,customFX){
+    IsCustomFX: function (Effect, customFX) {
         var fxName = Effect.displayName;
-        switch(fxName)
-        {
-            case "Transform":
-                var properties = Effect.properties;
-                var skew = Math.floor(10000*properties[4].getValue())/10000;
-                var axis = Math.floor(10000*properties[5].getValue())/10000;
-                var opacity = Math.floor(10000*properties[6].getValue())/10000;
-                if(customFX == "cameraMovement" && (skew==0.0007 || axis == 0.0007 || opacity == 99.9997))
-                   return true;
-                if(customFX == "baseShake" && (skew==0.0006 || axis == 0.0006 || opacity == 99.9996))
-                   return true;
-                if(customFX == "SpinBlur" && (skew==0.0005 || axis == 0.0005 || opacity == 99.9995))
-                   return true;
-                if(customFX == "ZoomBlur" && (skew==0.0004 || axis == 0.0004 || opacity == 99.9994))
-                   return true;
-                if(customFX == "GodRays" && (skew==0.0008 || axis == 0.0008 || opacity == 99.9998))
-                   return true;
+        var properties = Effect.properties;
+        switch (fxName) {
+            case "Opacity":
+                return true;
+            case "Motion":
+                return true;
 
-                   
+            case "Luma Key":
+                var cutoff = Math.floor(10000 * properties[1].getValue()) / 10000;
+                if (customFX == "glow" && cutoff == 10.0001)
+                    return true;
+                break;
+            case "Gaussian Blur":
+                return properties[2].isTimeVarying();
+                break;
+            case "Brightness & Contrast":
+                var Brightness = Math.floor(100 * properties[0].getValue()) / 100;
+                if (customFX == "glow" && Brightness == -0.01)
+                    return true;
+                if (customFX == "glow2" && Brightness == -0.02)
+                    return true;
+                break;
+            case "Transform":
+                var skew = Math.floor(10000 * properties[4].getValue()) / 10000;
+                var axis = Math.floor(10000 * properties[5].getValue()) / 10000;
+                var opacity = Math.floor(10000 * properties[6].getValue()) / 10000;
+                if (customFX == "cameraMovement" && (skew == 0.0007 || axis == 0.0007 || opacity == 99.9997))
+                    return true;
+                if (customFX == "baseShake" && (skew == 0.0006 || axis == 0.0006 || opacity == 99.9996))
+                    return true;
+                if (customFX == "SpinBlur" && (skew == 0.0005 || axis == 0.0005 || opacity == 99.9995))
+                    return true;
+                if (customFX == "ZoomBlur" && (skew == 0.0004 || axis == 0.0004 || opacity == 99.9994))
+                    return true;
+                if (customFX == "GodRays" && (skew == 0.0008 || axis == 0.0008 || opacity == 99.9998))
+                    return true;
                 break;
             case "ProcAmp":
-                var properties = Effect.properties;
-                var Split = Math.floor(10000*properties[5].getValue())/10000;
-                if(customFX == "GodRays" && Split == 50.0001)
+                var Split = Math.floor(10000 * properties[5].getValue()) / 10000;
+                if (customFX == "glow" && Split == 50.0001)
                     return true;
                 break;
             default:
                 return false;
         }
+        return false;
     },
-
-    SetCustomFX: function(Effect,customFX){
-        switch(Effect.displayName)
-        {
+    SetCustomFX: function (Effect, customFX) {
+        switch (Effect.displayName) {
+            case "Luma Key":
+                switch (customFX) {
+                    case "glow":
+                        var properties = Effect.properties;
+                        properties[0].setValue(15);
+                        properties[1].setValue(10.0001);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case "Gaussian Blur":
+                switch (customFX) {
+                    case "glow":
+                        var properties = Effect.properties;
+                        properties[2].setTimeVarying(true);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case "Brightness & Contrast":
+                switch (customFX) {
+                    case "glow":
+                        var properties = Effect.properties;
+                        properties[0].setValue(-0.01);
+                        break;
+                    case "glow2":
+                        var properties = Effect.properties;
+                        properties[0].setValue(-0.02);
+                        break;
+                    default:
+                        break;
+                }
             case "Transform":
-                switch(customFX)
-                {
+                switch (customFX) {
                     case "cameraMovement":
-                         var properties = Effect.properties;
-                         var skew = properties[4].setValue(0.00071 );
-                         var axis = properties[5].setValue(0.00071);
-                         var opacity = properties[6].setValue(99.99971);
-                         break;
+                        var properties = Effect.properties;
+                        var skew = properties[4].setValue(0.00071);
+                        var axis = properties[5].setValue(0.00071);
+                        var opacity = properties[6].setValue(99.99971);
+                        break;
                     case "baseShake":
-                         var properties = Effect.properties;
-                         var skew = properties[4].setValue(0.00061 );
-                         var axis = properties[5].setValue(0.00061);
-                         var opacity = properties[6].setValue(99.99961);
-                         break;
+                        var properties = Effect.properties;
+                        var skew = properties[4].setValue(0.00061);
+                        var axis = properties[5].setValue(0.00061);
+                        var opacity = properties[6].setValue(99.99961);
+                        break;
                     case "SpinBlur":
-                            var properties = Effect.properties;
-                            var skew = properties[4].setValue(0.00051 );
-                            var axis = properties[5].setValue(0.00051);
-                            var opacity = properties[6].setValue(99.99951);
-                            break;
+                        var properties = Effect.properties;
+                        var skew = properties[4].setValue(0.00051);
+                        var axis = properties[5].setValue(0.00051);
+                        var opacity = properties[6].setValue(99.99951);
+                        break;
                     case "ZoomBlur":
-                            var properties = Effect.properties;
-                            var skew = properties[4].setValue(0.00041 );
-                            var axis = properties[5].setValue(0.00041);
-                            var opacity = properties[6].setValue(99.99941);
-                            break;
+                        var properties = Effect.properties;
+                        var skew = properties[4].setValue(0.00041);
+                        var axis = properties[5].setValue(0.00041);
+                        var opacity = properties[6].setValue(99.99941);
+                        break;
                     case "GodRays":
-                            var properties = Effect.properties;
-                            var skew = properties[4].setValue(0.00081);
-                            var axis = properties[5].setValue(0.00081);
-                            var opacity = properties[6].setValue(99.99981);
-                            break;
+                        var properties = Effect.properties;
+                        var skew = properties[4].setValue(0.00081);
+                        var axis = properties[5].setValue(0.00081);
+                        var opacity = properties[6].setValue(99.99981);
+                        break;
 
                     default:
-                         break;
+                        break;
                 }
                 break;
             case "ProcAmp":
-                switch(customFX)
-                {
-                    case "GodRays":
-                            var properties = Effect.properties;
-                            var Split = properties[5].setValue(50.00011 );
+                switch (customFX) {
+                    case "glow":
+                        var properties = Effect.properties;
+                        properties[5].setValue(50.00011);
+                        break;
                     default:
                         break;
                 }
@@ -327,50 +365,111 @@ $._PPP_ = {
                 break;
         }
     },
-
-    GetEffectFromClip: function(Clip,fxName,customFX)
-    {
-        if(Clip.trackNum == undefined || Clip.trackNum == null)
-          return this.Alert(true,true,"ERROR: clip trackNum is null");
-        if(Clip.clipNum == undefined || Clip.clipNum == null)
-          return this.Alert(true,true,"ERROR: clip clipNum is null");
+    GetEffectFromClip: function (Clip, fxName, customFX, seq) {
+        if (Clip.trackNum == undefined || Clip.trackNum == null)
+            return this.Alert(true, true, "ERROR: clip trackNum is null");
+        if (Clip.clipNum == undefined || Clip.clipNum == null)
+            return this.Alert(true, true, "ERROR: clip clipNum is null");
         var tFX;
         var fxCount = Clip.components.numItems;
-        for (var s = 0; s < fxCount; s++)
-        {
+        for (var s = 0; s < fxCount; s++) {
             tFX = Clip.components[s];
-            if(tFX.displayName == fxName)
-                if(this.IsCustomFX(tFX,customFX))
+            if (tFX.displayName == fxName)
+                if (this.IsCustomFX(tFX, customFX)) {
                     return tFX;
+                }
         }
-        try{ this.AddEffect(fxName,Clip.trackNum,Clip.clipNum);}
-        catch(err){this.Alert(true,true,"somesting went wrong locating/creating ["+fxName+"]FX at " + ToString(Clip))};
+
+        try { this.AddEffect(fxName, Clip.trackNum, Clip.clipNum, undefined, seq); }
+        catch (err) { this.Alert(true, true, "somesting went wrong locating/creating [" + fxName + "]FX at " + ToString(Clip)) };
         var pos = 2;
-        if(Clip.components[2].displayName == "Vector Motion")
-          pos = 3;
+        if (Clip.components[2].displayName == "Vector Motion")
+            pos = 3;
 
 
         tFX = Clip.components[pos];
-        this.SetCustomFX(tFX,customFX);
+
+        this.SetCustomFX(tFX, customFX);
 
         return tFX;
     },
+    ResetKeyframes: function (EffectAttr, allowKeyframes) {
+        if (EffectAttr.areKeyframesSupported()) {
+            EffectAttr.setTimeVarying(false);
+            EffectAttr.setTimeVarying(allowKeyframes);
+        }
+    },
+    FxEndOfUserKeyframs: function (fxKeys, framesFromClipStart) {
+        var hashKey = Math.round(framesFromClipStart);
+        var maxKey = fxKeys.max;
+        return hashKey <= maxKey;
+    },
+    FxGetUserKeyframe: function (fxKeys, framesFromClipStart) {
+        var hashKey = Math.round(framesFromClipStart);
+        var maxKey = fxKeys.max;
+        if (hashKey > maxKey)
+            hashKey = maxKey;
+        return fxKeys[hashKey];
+    },
+    GetClipFrameTime: function () {
+        if (app.project == undefined)
+            throw "1"
+        if (app.project.activeSequence == undefined)
+            throw "2"
+        this.global.currentSeq = app.project.activeSequence;
+        var timebase = this.global.currentSeq.timebase;
+        var t = new Time();
+        t.ticks = timebase;
+        this.global.frameTime = t.seconds;
 
-    ResetKeyframes: function(EffectAttr,allowKeyframes)
-    {
-        if (EffectAttr.areKeyframesSupported())
-            {
-                EffectAttr.setTimeVarying(false);
-                EffectAttr.setTimeVarying(allowKeyframes);
-            }
+        return this.global.frameTime;
     },
 
+    GetSeq: function (seq) {
+        if (seq.sequenceID != undefined)
+            return seq;
+        var proItemID = seq.nodeId;
+        for (var x = 0; x < app.project.sequences.numSequences; x++) {
+            if (app.project.sequences[x].projectItem.nodeId == proItemID) {
+                return app.project.sequences[x];
+            }
+        }
+        throw "no match is projectitem?"
+    },
 
+    AsNest: function (slectedClip, identifyStr, onCreation) {
+        var openedSeqID = app.project.activeSequence.sequenceID;
+        var projectItemRef = slectedClip.projectItem;
+        var clipName = projectItemRef.name;
+        var seqNamePrefix = identifyStr;
+        if (projectItemRef.isSequence() && clipName.indexOf("_") && clipName.split("_")[1] == seqNamePrefix)
+            return this.GetSeq(projectItemRef);
+        else {
+            var clipSeq;
+            clipSeq = app.project.createNewSequenceFromClips(slectedClip.nodeId + "_" + seqNamePrefix + "_CLOSE-ME!", projectItemRef, this.VerifyBin());
+            app.project.openSequence(openedSeqID);
+            clipSeq.audioTracks[1].setMute(1);
 
+            try {
+                var preInsert = clipSeq.projectItem;
+                preInsert.setInPoint(slectedClip.inPoint, 4);
+                preInsert.setOutPoint(slectedClip.outPoint, 4);
+                preInsert.setColorLabel(6);
+                app.project.activeSequence.videoTracks[slectedClip.trackNum].overwriteClip(preInsert, slectedClip.start);
+                app.project.activeSequence.videoTracks[slectedClip.trackNum].clips[slectedClip.clipNum].projectItem.select();
+                app.project.activeSequence.videoTracks[slectedClip.trackNum].clips[slectedClip.clipNum].name = "Glow_" + slectedClip.name;
+            }
+            catch (e) {
+                this.Alert(true, false, "e:" + e);
+            }
+            onCreation(clipSeq);
+            return clipSeq;
+        }
+    },
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////helper functions END
+    //#endregion
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////End protdact Functions START
+    //#region marker sound fx
     GetMarkerSts: function (colorIndex) {
         var data = "";
         if (app == null || !app.project)
@@ -413,79 +512,6 @@ $._PPP_ = {
 
         data = markercount + "/" + markAry.length;
         return data;
-    },
-    Spinner: function (masterScale, xScale, yScale, speed, speedOverTime, linear, neton, shutter) {
-        var multi = masterScale;
-        var currentSeq = app.project.activeSequence;
-        var timebase = currentSeq.timebase;
-        var t = new Time();
-        var slectedClips = this.GetAllSelectedClipsV();
-        t.ticks = timebase;
-        var keyframeRatio = t.seconds * 1;
-        for (var i = 0; i < slectedClips.length; i++) {
-			this.AddEffect("Transform",slectedClips[i].trackNum,slectedClips[i].clipNum);
-            var clipComponents = slectedClips[i].components;
-            var clipTimeStart = slectedClips[i].inPoint.seconds;
-            var clipLength = slectedClips[i].outPoint.seconds - clipTimeStart;
-            if (clipComponents) {
-                var didfindFX = false;
-                for (var s = 0; s < clipComponents.numItems; s++) {
-                    clipComponent = clipComponents[s];
-
-                    if (clipComponent.displayName == "Transform") {
-                        var didfindFX = true;
-                        var addtive = linear;
-                        var cicleC = 0;
-                        var bxScale = xScale;
-                        var byScale = yScale;
-                        var step = 0;
-                        var maxv = 6.28;
-                        var x = 0, y = 0;
-                        var properties = clipComponent.properties;
-                        var position = properties[1];
-                        if (position.areKeyframesSupported())
-                            position.setTimeVarying(true);
-						
-						var scaleRatio = properties[2];
-						scaleRatio.setValue(true,true);		
-						
-                        var k;
-                        for (k = clipTimeStart; k < clipLength + clipTimeStart; k = k + keyframeRatio) {
-                            step += speed;
-                            if (addtive) { speed += speedOverTime; }
-                            else { speed = speed * (1 + speedOverTime) };
-                            if (step > maxv) {
-                                cicleC += speed;
-                                step = 0;
-                            }
-                            x = this.calcX(step);
-                            y = this.calcY(step);
-                            if (neton) {
-                                xScale = bxScale * Math.abs(Math.cos(cicleC));
-                                yScale = byScale * Math.abs(Math.sin(cicleC));
-                            }
-                            x = (x) * multi * xScale + 0.5;
-                            y = (y) * multi * yScale + 0.5;
-
-                            t.seconds = k;
-                            position.addKey(t);
-                            position.setValueAtKey(t, [x, y], false);
-                        }
-                        var shutterSpeed = properties[10];
-                        shutterSpeed.setValue(shutter, true);
-						break;
-                    }
-                }
-                if (!didfindFX) {
-                    app.setSDKEventMessage("There is NO 'transform' effect for the selcted clip;\nClip name:" + slectedClips[i].name + ",\n plz add the effect and retry.", "error");
-                    alert("There is NO 'transform' effect for the selcted clip;\nClip name:" + slectedClips[i].name + ",\n plz add the effect and retry.", "error");
-                }
-            }
-        }
-        if (slectedClips.length == 0) {
-            app.setSDKEventMessage("there is not selected clip, please select one and retry.");
-            alert("there is not selected clip, please select one and retry.")
-        }
     },
 
     MarkerTransition: function (clipName, colorIndex, offset, path) {
@@ -613,626 +639,300 @@ $._PPP_ = {
 
 
     },
-    TextMaipulate: function (textFX,args,isKeyFrame,time) {
-		var properties = textFX.properties;		
-		var textItself = properties[0];
-		var isNeedUpdate = false;
-		
-		if(args.LastKeyFrame == null)
-			args.LastKeyFrame = false;
+    //#endregion
 
-		var SourceText;//מקבל את המקור של הטקסט- בין אם זה מהמקור או לפי ההגדה של הארגס
-		if(args.all)
-		{
-			SourceText = args.all;
-			isNeedUpdate = true;
-		}
-		else
-		 SourceText = textItself.getValue();
-	 
-		 if(args.text || args.tracking || args.getAll) //רק אם יש בכלל צורך בשינויים תמיר את האובייקט לJSON
-		 {
-			var mocaSourceText = SourceText.substring(4);
-			var SourceElement = JSON.parse(mocaSourceText);
-			if(args.getAll != null)
-			{
-				var mText = SourceElement.mTextParam.mStyleSheet.mText;
-				var res=[];
-				res[0] =  SourceText ;
-				res[1]= mText;
-				res[2] = SourceElement.mTextParam.mStyleSheet.mFontSize.mParamValues;//fontisize
-				res[3] = SourceElement.mTextParam.mStyleSheet.mTracking.mParamValues; //va
-				return res;
-			}
 
-			if(args.text != null)
-			{
-				var mText = SourceElement.mTextParam.mStyleSheet.mText;
-				SourceText = SourceText.replace('"mText":"' + mText + '"', '"mText":"'+args.text+'"');
-				isNeedUpdate = true;
-			}
-			if(args.tracking)
-			{
-				var mTracking = SourceElement.mTextParam.mStyleSheet.mTracking.mParamValues;
-				SourceText = SourceText.replace('"mTracking":{"mParamValues":[[' + mTracking + ']]}', '"mTracking":{"mParamValues":[[0,'+args.tracking+']]}');
-				isNeedUpdate = true;
-			}
-			//toDo baselineshift (if size 400 make it -150)
-		 }
-	    if(isNeedUpdate)
-			textItself.setValue(SourceText,false);
-		
-		
-		
-						var position = properties[2];
-						var scaleW = properties[3];
-						var scaleH = properties[4];
-						var scaleRation = properties[5];
-						var rotation = properties[6];
-						var opacity = properties[7];
-						
-						if(args.position != null)
-							if(isKeyFrame)
-							{
-								position.setTimeVarying(true);
-								position.addKey(time);
-								position.setValueAtKey(time,args.position,args.LastKeyFrame);
-							}
-							else
-							{position.setValue(args.position,args.LastKeyFrame)}
-						
-						if(args.scaleW != null)
-							if(isKeyFrame)
-							{
-								scaleW.setTimeVarying(true);
-								scaleW.addKey(time);
-								scaleW.setValueAtKey(time,args.scaleW,args.LastKeyFrame);
-							}
-							else
-							{scaleW.setValue(args.scaleW,args.LastKeyFrame)}
-						
-						if(args.scaleH != null)
-							if(isKeyFrame)
-							{
-								scaleH.setTimeVarying(true);
-								scaleH.addKey(time);
-								scaleH.setValueAtKey(time,args.scaleH,args.LastKeyFrame);
-							}
-							else
-							{scaleH.setValue(args.scaleH,args.LastKeyFrame)}
-						
-						if(args.scaleRation != null)
-							if(isKeyFrame)
-							{
-								scaleRation.setTimeVarying(true);
-								scaleRation.addKey(time);
-								scaleRation.setValueAtKey(time,args.scaleRation,args.LastKeyFrame);
-							}
-							else
-							{scaleRation.setValue(args.scaleRation,args.LastKeyFrame)}
-						
-						if(args.rotation != null)
-							if(isKeyFrame)
-							{
-								rotation.setTimeVarying(true);
-								rotation.addKey(time);
-								rotation.setValueAtKey(time,args.rotation,args.LastKeyFrame);
-							}
-							else
-							{rotation.setValue(args.rotation,args.LastKeyFrame)}
-						
-						if(args.opacity != null)
-							if(isKeyFrame)
-							{
-								opacity.setTimeVarying(true);
-								opacity.addKey(time);
-								opacity.setValueAtKey(time,args.opacity,args.LastKeyFrame);
-							}
-							else
-							{opacity.setValue(args.opacity,args.LastKeyFrame)}
-    },
-     TextSpaceing: function(easeType,isEaseOut,transitionTime,tracking,addiveTrack,rotation,rotateDirRTL,minimun)
-	 {
-		 
-		rotation = rotation - minimun;
-		 
-	    var currentSeq = app.project.activeSequence;
-        var timebase = currentSeq.timebase;
-        var t = new Time();
-        var slectedClips = this.GetAllSelectedClipsV();
-        t.ticks = timebase;
-		
+    glowFX: function (glowAmount, glowSize, falloff, ignoreBlacks, blend) {
+        this.BaseApplyFX(function (slectedClip) {
 
-	
+            var innerSeq = this.AsNest(slectedClip, "Seq-Glow", function (innerSeq) {
+                innerSeq.videoTracks[1].overwriteClip(slectedClip.projectItem, new Time());
+            });
+            var fxClip = innerSeq.videoTracks[1].clips[0];
 
-        for (var i = 0; i < slectedClips.length; i++) {
-			var currClip = slectedClips[i];
-			var clipComponents = currClip.components;
-			if(clipComponents.numItems > 3)
-			{	
-				var oneLetterFXCount = 0;
-				var compareDesign = null;
-				//עבור כל קליפ עם יותר מ3 אפקטים
-		    	for(var z = 2; z < clipComponents.numItems ; z++)
-				{
-					 var currentFX = clipComponents[z];
-					 if (currentFX.displayName == "Text") //זיהוי  / בדיקה של אפקט טקסט
-					{
-						var args = {};
-						args.getAll = true;
-						var baseDeisgn = this.TextMaipulate(currentFX,args,false,null); //לקיחת המשתנים של העיצוב / הטקסט עצמו
-						var text = baseDeisgn[1];
-						if(text[text.length-1] == " ")
-							text = text.substr(0,text.length-1);
-						
-						if(text.length <= 1) //אם אורך הטקסט הוא 1 אז זה כנראה אפקט מפעם קודמת, במצב כזה אין צורך לבצע את כל האפקט
-						{
-							oneLetterFXCount++;
-						}
-						else //אם זה לא רק תו אחד נמשיך הלאה
-						{
-							
-							//בדיקה של עברית ובמקרה וכן אז היפוך אותויות, בידקה עבור כל מילה
-							var fixedText = "";
-							var isHebrew = false;
-							var isLastHebrew = false;
-							var isLastHe = false;
-							var words = (String)(text).split(" ");
-							for(var b = 0; b < words.length; b++)
-							{					
-							var position = words[b].search(/[\u0590-\u05FF]/);
-								if(position >= 0){
-									isHebrew = true;
-									var newText = "";
-									for(var a = 1; a <= (String)(words[b]).length; a++)
-										newText = (String)(newText) + (String)(words[b][words[b].length - a]) ;
-									words[b] = newText;
-								}
-							
-							if(isHebrew)
-								{
-									if(isLastHe)
-									{
-										isLastHe = false;
-										fixedText = words[b] +  fixedText;
-									}
-									else
-										fixedText = words[b] + " " +  fixedText;
-									isLastHebrew = true;
-								}
-								else
-								{
-									if(isLastHebrew)
-									{
-										isLastHebrew = false;
-										fixedText = fixedText + words[b];
-									}
-									else
-										fixedText = fixedText + " " +  words[b];
-									isLastHe = true;
-								}
-							
-							}
-							if(fixedText != null && fixedText != "")
-							text = fixedText.substring(0, fixedText.length - 0); //במקרה שיש עברית בטקסט הגדר מחדש את המשתנה הרגיל
-							if(text[text.length-1] == " ")
-								text = text.substr(0,text.length-1);
-							if(text[0] == " ")
-								text = text.substr(1,text.length);
-							
-							
-							var trackN = currClip.trackNum, clipN = currClip.clipNum; //לקיחת מיקום הקליפ ובאיזה שכבה הוא נמצא
-							var clipTimeStart = currClip.inPoint.seconds,clipLength = currClip.duration.seconds;
-							if(transitionTime > clipLength)
-								transitionTime = clipLength;
-							t.ticks = timebase;
-							var keyframeRatio = t.seconds * 1;
-							
-							var letterrWidth = (String)(baseDeisgn[2][0]).split(",")[1] * 0.6 / currentSeq.frameSizeHorizontal; //לקיחת הגדרות לחישוב
-							var lineHeight = (String)(baseDeisgn[2][0]).split(",")[1] / currentSeq.frameSizeVertical;
-							var spacing = (String)(baseDeisgn[3][0]).split(",")[1] / 4 / currentSeq.frameSizeHorizontal + addiveTrack;
-							var args = {};args.opacity = 0;
-							this.TextMaipulate(currentFX,args,false,null); // שומר רפרנס לטקסט המקורי
-							
-							var NotRewriteMode = oneLetterFXCount < text.replace(" ","").length;
-                            var ReWriteCounter = 0;
-                            var ClearedText = text.replace(" ","");
-							if(NotRewriteMode)
-								this.AddEffect("Text",trackN,clipN);
-							for(var cLetter = 0; cLetter < text.length; cLetter++)//עבור כל אות / אפקט שים עיצוב ותו מתאים
-							{
-								var charX = text[text.length-1-cLetter];
-								if(charX != null && charX != "" && charX != " ") //אם האות הנוכחית מוגדרת
-								{
-                                    var newTextFX;
-                                    if(!NotRewriteMode)
-                                    {
-                                        ReWriteCounter++;
-                                        newTextFX = currClip.components[z - (ClearedText.length-ReWriteCounter) - 1]; // לוקח את האפקט הנוכחי לפי המיקום של האות
-                                    }
-                                    else
-								    	newTextFX = currClip.components[z]; // לוקח את האפקט הנוכחי לפי המיקום של האות
-									var args = {};
-									args.all = baseDeisgn[0];
-									args.text = charX;
-									this.TextMaipulate(newTextFX,args,false);
-									if(text.length > 1 && cLetter < text.length-1     &&   NotRewriteMode)
-										this.AddEffect("Text",trackN,clipN);
-								}
-							}
-							
-							
-							
-							args = null;
-							args = {}
+            fxClip.trackNum = 1;
+            fxClip.clipNum = 0;
+            fxClip.name = "Glow Layer";
 
-							//עבור כל פריים בטווח האנימציה
-							var dynamicTracking = tracking;
-							var dynamicRotation = rotation;
-							for (k = clipTimeStart; k <= transitionTime + clipTimeStart + keyframeRatio; k = k + keyframeRatio) 
-							{
-								var partTime;
-								var prePartTime = Math.min((k-clipTimeStart)/(transitionTime),1);
-								partTime = Math.abs(isEaseOut - prePartTime); 
-								
-								var presentPart;
-								if(easeType == 0)
-									presentPart = partTime;
-								else
-									presentPart = Math.abs(isEaseOut - Math.sqrt(1-Math.pow(partTime,easeType)));
-								
-								dynamicTracking = tracking * presentPart;
-								dynamicRotation = rotation * presentPart / (text.length-1);
-								
-								t.seconds = k;
-								var cLetter = 0;
-								
-								
-								var letterPos = 0;
-								for(var cLetter = 0; cLetter < text.length; cLetter++)
-								{
-									var charX = text[cLetter];
-									if(charX != null && charX != "" && charX != " ")
-									{
-										
-										
-										var endPos;
-										var multiAction = ((2*NotRewriteMode)-1);
-										var newTextFX = currClip.components[z + letterPos * multiAction - !NotRewriteMode]; // לוקח את האפקט הנוכחי לפי המיקום של האות
-										
-										var wholeTextWidth = (text.length-2.2) * letterrWidth*1.0;
-										var CurrentTWithoutSpacingPos = cLetter * letterrWidth*1.0;
-										var centerPos = 0.5 - wholeTextWidth/2.0 + CurrentTWithoutSpacingPos;
-										var additiveSpacing = dynamicTracking * ((cLetter+0.5)-text.length/2.0);
-										var constSpacing = ((cLetter+0.5)-text.length/2.0)/3 * spacing;
-										endPos = centerPos + additiveSpacing + constSpacing;
+            var openedSeqID = app.project.activeSequence.sequenceID;
+            app.project.openSequence(innerSeq.sequenceID);
+            var lumakeyFX = this.GetEffectFromClip(fxClip, "Luma Key", "glow");
+            var brightness_ontrast1FX = this.GetEffectFromClip(fxClip, "Brightness & Contrast", "glow");
+            var blurFX = this.GetEffectFromClip(fxClip, "Gaussian Blur", "glow");
+            var brightness_ontrast2FX = this.GetEffectFromClip(fxClip, "Brightness & Contrast", "glow2");
+            var ampFX = this.GetEffectFromClip(fxClip, "ProcAmp", "glow");
+            app.project.openSequence(openedSeqID);
 
-										args.position = [endPos,0.5 + lineHeight/3];
-										
-										
-										var rotationMulty;
-										if(rotateDirRTL)
-											rotationMulty = cLetter + minimun / 180 - text.length;
-										else
-											rotationMulty = cLetter + minimun / 180;
-										
-										args.rotation = dynamicRotation * rotationMulty;
-										
-										if(k>transitionTime + clipTimeStart)
-											args.LastKeyFrame = true;
-										
-									 
-										this.TextMaipulate(newTextFX,args,true,t);//שומר את המיקום הגדרות לפריים הנוכחי
-										letterPos++
-									}
-								}
-								
-								
+            var opacityFx = this.GetEffectFromClip(fxClip, "Opacity", "glow");
+            if (blend["0"])
+                opacityFx.properties[1].setValue(11);//lighten
+            else
+                opacityFx.properties[1].setValue(22);//screen
 
-							}
-							
-							break; //ברגע שסיים את הפעולה לאחר הזיהוי של האפקט טקסט הראשון תפסיק לבצע פעולות עבור כליפ זה
-						}
-					}
-			   }
-			}
-		}	
+            var clipTimeStart = slectedClip.inPoint.seconds;
+            var clipLength = slectedClip.duration.seconds;
+
+            var lumaThree = lumakeyFX.properties[0];
+            var bnc1 = brightness_ontrast1FX.properties[1];
+            var bnc2 = brightness_ontrast2FX.properties[1];
+            var blur = blurFX.properties[0];
+            var brightness = ampFX.properties[0];
+            ampFX.properties[3].setValue(200);
+            ampFX.properties[1].setValue(110);
+
+
+
+            this.ResetKeyframes(lumaThree, true);
+            this.ResetKeyframes(bnc1, true);
+            this.ResetKeyframes(bnc2, true);
+            this.ResetKeyframes(blur, true);
+            this.ResetKeyframes(brightness, true);
+
+            var t = new Time();
+            for (var k = clipTimeStart; k < clipLength + clipTimeStart + this.global.frameTime; k = k + this.global.frameTime * 2) {
+                var timefromClipStart = (k - clipTimeStart) / this.global.frameTime;
+                t.seconds = k;
+
+                var lumaThree_frame = this.FxGetUserKeyframe(ignoreBlacks, timefromClipStart);
+                if (this.FxEndOfUserKeyframs(ignoreBlacks, timefromClipStart)) {
+                    lumaThree.addKey(t);
+                    lumaThree.setValueAtKey(t, lumaThree_frame, k >= clipLength + clipTimeStart);
+                }
+
+                var bnc_frame = this.FxGetUserKeyframe(falloff, timefromClipStart);
+                if (this.FxEndOfUserKeyframs(falloff, timefromClipStart)) {
+                    bnc1.addKey(t);
+                    bnc1.setValueAtKey(t, bnc_frame, k >= clipLength + clipTimeStart);
+                    bnc2.addKey(t);
+                    bnc2.setValueAtKey(t, (-1) * bnc_frame, k >= clipLength + clipTimeStart);
+                }
+
+                var blur_frame = this.FxGetUserKeyframe(glowSize, timefromClipStart);
+                if (this.FxEndOfUserKeyframs(glowSize, timefromClipStart)) {
+                    blur.addKey(t);
+                    blur.setValueAtKey(t, blur_frame, k >= clipLength + clipTimeStart);
+                }
+
+                var brightness_frame = this.FxGetUserKeyframe(glowAmount, timefromClipStart) - 100;
+                if (this.FxEndOfUserKeyframs(glowAmount, timefromClipStart)) {
+                    brightness.addKey(t);
+                    brightness.setValueAtKey(t, brightness_frame, k >= clipLength + clipTimeStart);
+                }
+            }
+        });
     },
 
-    //#region renew
-    global: {frameTime:undefined,currentSeq:undefined,wiggleX:undefined, wiggleY:undefined},
+    //#region effects
 
-    BaseApplyFX: function(callback)
-    {
+    BaseApplyFX: function (callback) {
         this.GetClipFrameTime();
         var slectedClips = this.GetAllSelectedClipsV();
         if (slectedClips.length == 0)
-            return this.Alert(true,true,"there is not selected clip, please select one and retry.");
+            return this.Alert(true, true, "there is not selected clip, please select one and retry.");
 
-         for (var i = 0; i < slectedClips.length; i++) 
-        {
-            callback.call(this,slectedClips[i]);
+        var result = "//- ";
+        for (var i = 0; i < slectedClips.length; i++) {
+            var r = callback.call(this, slectedClips[i]);
+            if (r instanceof Time) {
+                r = r.seconds + "";
+            }
+            result += r + " //- ";
         }
-    },
-
-    GetClipFrameTime: function()
-    {
-        if(app.project == undefined)
-        throw "1"
-        if(app.project.activeSequence == undefined)
-        throw "2"
-        this.global.currentSeq = app.project.activeSequence;
-        var timebase = this.global.currentSeq.timebase;
-        var t = new Time();
-        t.ticks = timebase;
-        this.global.frameTime = t.seconds;
-
-        return this.global.frameTime;
-    },
-
-    FxGetUserKeyframe: function(fxKeys, framesFromClipStart)
-    {
-        var hashKey = Math.round(framesFromClipStart);
-        var maxKey = fxKeys.max;
-        if(hashKey > maxKey)
-            hashKey = maxKey;
-        return fxKeys[hashKey];
+        return result;
     },
 
     CameraMovement: function (multi, rate, horizental, vertical, isAuto, shutter) {
-       this.BaseApplyFX(function(slectedClip){
-            debugger;
-            
-            var tansformFX = this.GetEffectFromClip(slectedClip,"Transform","cameraMovement");
+        this.BaseApplyFX(function (slectedClip) {
+            var tansformFX = this.GetEffectFromClip(slectedClip, "Transform", "cameraMovement");
             var clipTimeStart = slectedClip.inPoint.seconds;
             var clipLength = slectedClip.duration.seconds;
             var properties = tansformFX.properties;
             var shutterSpeed = properties[10];
             shutterSpeed.setValue(shutter["0"], true);
             var scaleRatio = properties[2];
-            scaleRatio.setValue(true,true);
+            scaleRatio.setValue(true, true);
 
             var scale = properties[3];
-            this.ResetKeyframes(scale,true);
+            this.ResetKeyframes(scale, true);
             var position = properties[1];
-            this.ResetKeyframes(position,true);
+            this.ResetKeyframes(position, true);
             var t = new Time();
-            for (var k = clipTimeStart; k < clipLength + clipTimeStart + this.global.frameTime; k = k + this.global.frameTime) 
-            {
-                 var framesFromClipStart = (k - clipTimeStart) / this.global.frameTime;
-                 t.seconds = k;
-                 position.addKey(t);
-                scale.addKey(t);
-            
-                 var multiFrame =  this.FxGetUserKeyframe(multi,framesFromClipStart)/100;
-                 var verticalFrame =  this.FxGetUserKeyframe(vertical,framesFromClipStart)/200;
-                 var horizentalFrame =  this.FxGetUserKeyframe(horizental,framesFromClipStart)/200;
-                 var newPositionX =   0.5 + this.wiggle( rate["0"]/3, multiFrame * verticalFrame, t.seconds ,"x"); 
-                 var newPositionY =   0.5 + this.wiggle( rate["0"]/3, multiFrame * horizentalFrame, t.seconds ,"y");
-                 if(isNaN(newPositionX))
-                 {
-                     throw "sdfd";
-                 }
-                if(isAuto["0"] == 1)
-                {
-                    scale.setValueAtKey(t,(100 +  multiFrame * 1000 * (Math.max(Math.abs(0.5 - newPositionX), Math.abs(0.5 - newPositionY)))), k >= clipLength + clipTimeStart);
+            for (var k = clipTimeStart; k < clipLength + clipTimeStart + this.global.frameTime; k = k + this.global.frameTime) {
+                var framesFromClipStart = (k - clipTimeStart) / this.global.frameTime;
+                t.seconds = k;
+                position.addKey(t);
+
+                var multiFrame = this.FxGetUserKeyframe(multi, framesFromClipStart) / 100;
+                var verticalFrame = this.FxGetUserKeyframe(vertical, framesFromClipStart) / 200;
+                var horizentalFrame = this.FxGetUserKeyframe(horizental, framesFromClipStart) / 200;
+                var newPositionX = 0.5 + this.wiggle(rate["0"] / 3, multiFrame * verticalFrame, t.seconds, "x");
+                var newPositionY = 0.5 + this.wiggle(rate["0"] / 3, multiFrame * horizentalFrame, t.seconds, "y");
+                if (isNaN(newPositionX)) {
+                    throw "sdfd";
                 }
-                else
-                {
-                    scale.setValueAtKey(t,(100 + multiFrame * 100 * (Math.max(horizentalFrame, verticalFrame)*2)), k >= clipLength + clipTimeStart);
+                if (isAuto["0"] == 1) {
+                    scale.addKey(t);
+                    scale.setValueAtKey(t, (100 + multiFrame * 1000 * (Math.max(Math.abs(0.5 - newPositionX), Math.abs(0.5 - newPositionY)))), k >= clipLength + clipTimeStart);
                 }
-                 position.setValueAtKey(t, [newPositionX, newPositionY], k >= clipLength + clipTimeStart);
+                else if (this.FxEndOfUserKeyframs(multi, framesFromClipStart) ||
+                    this.FxEndOfUserKeyframs(vertical, framesFromClipStart) ||
+                    this.FxEndOfUserKeyframs(horizental, framesFromClipStart)) {
+                    scale.addKey(t);
+                    scale.setValueAtKey(t, (100 + multiFrame * 100 * (Math.max(horizentalFrame, verticalFrame) * 2)), k >= clipLength + clipTimeStart);
+                }
+                position.setValueAtKey(t, [newPositionX, newPositionY], k >= clipLength + clipTimeStart);
             }
             this.global.wiggleX = undefined;
             this.global.wiggleY = undefined;
-       });
-       return this.global.frameTime;
+        });
+        return this.global.frameTime;
     },
 
     BaseShake: function (multi, rate, horizental, vertical, isAuto, shutter) {
-       this.BaseApplyFX(function(slectedClip){
+        this.BaseApplyFX(function (slectedClip) {
 
-            var tansformFX = this.GetEffectFromClip(slectedClip,"Transform","baseShake");
+            var tansformFX = this.GetEffectFromClip(slectedClip, "Transform", "baseShake");
             var clipTimeStart = slectedClip.inPoint.seconds;
             var clipLength = slectedClip.duration.seconds;
             var properties = tansformFX.properties;
             var shutterSpeed = properties[10];
             shutterSpeed.setValue(shutter["0"], true);
             var scaleRatio = properties[2];
-            scaleRatio.setValue(true,true);
+            scaleRatio.setValue(true, true);
 
-            var scale = properties[3]; 
-            this.ResetKeyframes(scale,true);
+            var scale = properties[3];
+            this.ResetKeyframes(scale, true);
             var position = properties[1];
-            this.ResetKeyframes(position,true);
+            this.ResetKeyframes(position, true);
             var t = new Time();
-            for (var k = clipTimeStart; k < clipLength + clipTimeStart + this.global.frameTime * rate["0"]; k = k + this.global.frameTime * rate["0"]) 
-            {
-                 var timefromClipStart = k - clipTimeStart;
-                 t.seconds = k;
-                 position.addKey(t);
-                 scale.addKey(t);
+            for (var k = clipTimeStart; k < clipLength + clipTimeStart + this.global.frameTime * rate["0"]; k = k + this.global.frameTime * rate["0"]) {
+                var timefromClipStart = (k - clipTimeStart) / this.global.frameTime;
+                t.seconds = k;
+                position.addKey(t);
 
-                 var multiFrame =  this.FxGetUserKeyframe(multi,timefromClipStart)/100;
-                 var verticalFrame =  this.FxGetUserKeyframe(vertical,timefromClipStart)/200;
-                 var horizentalFrame =  this.FxGetUserKeyframe(horizental,timefromClipStart)/200;
-                 var x = this.rndRange(multiFrame * verticalFrame);
-                 var y = this.rndRange(multiFrame * horizentalFrame);
+                var multiFrame = this.FxGetUserKeyframe(multi, timefromClipStart) / 100;
+                var verticalFrame = this.FxGetUserKeyframe(vertical, timefromClipStart) / 200;
+                var horizentalFrame = this.FxGetUserKeyframe(horizental, timefromClipStart) / 200;
+                var x = this.rndRange(multiFrame * verticalFrame);
+                var y = this.rndRange(multiFrame * horizentalFrame);
 
-                if(isAuto["0"] == 1)
-                {
-                    scale.setValueAtKey(t,(100 +  multiFrame * 1000 * (Math.max(Math.abs(0.5 - x), Math.abs(0.5 - y)))), k >= clipLength + clipTimeStart);
+                if (isAuto["0"] == 1) {
+                    scale.addKey(t);
+                    scale.setValueAtKey(t, (100 + multiFrame * 1000 * (Math.max(Math.abs(0.5 - x), Math.abs(0.5 - y)))), k >= clipLength + clipTimeStart);
                 }
-                else
-                {
-                    scale.setValueAtKey(t,(100 + multiFrame * 100 * (Math.max(horizentalFrame, verticalFrame)*2)), k >= clipLength + clipTimeStart);
+                else if (this.FxEndOfUserKeyframs(multi, timefromClipStart) ||
+                    this.FxEndOfUserKeyframs(vertical, timefromClipStart) ||
+                    this.FxEndOfUserKeyframs(horizental, timefromClipStart)) {
+                    scale.addKey(t);
+                    scale.setValueAtKey(t, (100 + multiFrame * 100 * (Math.max(horizentalFrame, verticalFrame) * 2)), k >= clipLength + clipTimeStart);
                 }
-                 position.setValueAtKey(t, [x,y],  k >= clipLength + clipTimeStart);
+                position.setValueAtKey(t, [x, y], k >= clipLength + clipTimeStart);
             }
             this.global.wiggleX = undefined;
             this.global.wiggleY = undefined;
-       });
+        });
+    },
+
+    ZoomBlur: function (ScaleAmount, blurLength, AutoCenter) {
+        var res = this.BaseApplyFX(function (slectedClip) {
+
+            var tansformFX = this.GetEffectFromClip(slectedClip, "Transform", "ZoomBlur");
+            var clipTimeStart = slectedClip.inPoint.seconds;
+            var clipLength = slectedClip.duration.seconds;
+            var properties = tansformFX.properties;
+
+            var scaleRatio = properties[2];
+            scaleRatio.setValue(true, true);
+
+            var shutterSpeed = properties[10];
+            shutterSpeed.setValue(blurLength["0"], true);
+            this.ResetKeyframes(shutterSpeed, true);
+
+            var ancor = properties[0];
+            if ((AutoCenter[0] == 1) && !ancor.isTimeVarying()) {
+                var ancor = properties[0];
+                var position = properties[1];
+                var ancorCal = ancor.getValue();
+                position.setValue(ancorCal, true);
+            }
+
+            var scale = properties[3];
+            this.ResetKeyframes(scale, true);
+
+            var t = new Time();
+            var x = 0;
+            for (var k = clipTimeStart; k <= clipLength + clipTimeStart + this.global.frameTime; k = k + this.global.frameTime) {
+                x++;
+                var timefromClipStart = Math.round((k - clipTimeStart) / this.global.frameTime);
+                t.seconds = k;
+                scale.addKey(t);
+                scale.setValueAtKey(t, 100, k >= clipLength + clipTimeStart);
+
+                var subFrame = new Time();
+                subFrame.seconds = t.seconds + this.global.frameTime * 0.5;
+                var amountFrame = 100 + this.FxGetUserKeyframe(ScaleAmount, timefromClipStart);
+                scale.addKey(subFrame);
+                scale.setValueAtKey(subFrame, amountFrame, k >= clipLength + clipTimeStart);
+            }
+            return x;
+        });
+        return res;
+
+    },
+
+    SpinBlur: function (SpinAmount, blurLength, AutoCenter) {
+        var res = this.BaseApplyFX(function (slectedClip) {
+
+            var tansformFX = this.GetEffectFromClip(slectedClip, "Transform", "SpinBlur");
+            var clipTimeStart = slectedClip.inPoint.seconds;
+            var clipLength = slectedClip.duration.seconds;
+            var properties = tansformFX.properties;
+
+            var scaleRatio = properties[2];
+            scaleRatio.setValue(true, true);
+
+            var shutterSpeed = properties[10];
+            shutterSpeed.setValue(blurLength["0"], true);
+            this.ResetKeyframes(shutterSpeed, true);
+
+            var ancor = properties[0];
+            if ((AutoCenter[0] == 1) && !ancor.isTimeVarying()) {
+                var ancor = properties[0];
+                var position = properties[1];
+                var ancorCal = ancor.getValue();
+                position.setValue(ancorCal, true);
+            }
+
+            var rotation = properties[7];
+            this.ResetKeyframes(rotation, true);
+
+            var t = new Time();
+            var x = 0;
+            for (var k = clipTimeStart; k <= clipLength + clipTimeStart + this.global.frameTime; k = k + this.global.frameTime) {
+                x++;
+                var timefromClipStart = Math.round((k - clipTimeStart) / this.global.frameTime);
+                t.seconds = k;
+                rotation.addKey(t);
+                rotation.setValueAtKey(t, 0.0, k >= clipLength + clipTimeStart);
+
+                var subFrame = new Time();
+                subFrame.seconds = t.seconds + this.global.frameTime * 0.5;
+                var amountFrame = this.FxGetUserKeyframe(SpinAmount, timefromClipStart);
+                rotation.addKey(subFrame);
+                rotation.setValueAtKey(subFrame, amountFrame, k >= clipLength + clipTimeStart);
+            }
+            return x;
+        });
+        return res;
+
     },
     //#endregion
 
 
-    SpinBlur: function(SpinAmount,blurLength,AutoCenter,func){
-        if(func == null || func=="" || func == " ")
-          func = "1";
-        var currentSeq = app.project.activeSequence;
-        var timebase = currentSeq.timebase;
-        var t = new Time();
-        var slectedClips = this.GetAllSelectedClipsV();
-        t.ticks = timebase;
-        var keyframeRatio = t.seconds;
-        var subKeyframe = t.seconds / 2;
-        for (var i = 0; i < slectedClips.length; i++) {
-            var tansformFX = this.GetEffectFromClip(slectedClips[i],"Transform","SpinBlur");
-            var clipTimeStart = slectedClips[i].inPoint.seconds;
-            var clipLength = slectedClips[i].duration.seconds;
-            
-
-            var properties = tansformFX.properties;
-            var shutterSpeed = properties[10];
-            shutterSpeed.setValue(blurLength, true);
-
-            var width = properties[4];
-            width.setValue(100);
-
-            var ancor = properties[0];
-            var position = properties[1];
-            if (AutoCenter == "true" && !ancor.isTimeVarying())
-            {
-                var ancorCal = ancor.getValue();
-                var x = ancorCal[0];
-                var y= ancorCal[1];
-                position.setValue([x,y], true);
-            }
-
-            var rotation = properties[7];
-            this.ResetKeyframes(rotation,true);
-            for (var k = clipTimeStart; k < clipLength + clipTimeStart + keyframeRatio; k = k + keyframeRatio) 
-            {
-                t.seconds = k;
-                rotation.addKey(t);
-                rotation.setValueAtKey(t,0.0,k >= clipLength + clipTimeStart);
-
-                if (AutoCenter == "true" && ancor.isTimeVarying() && false)//need a way to get value by time.
-                {
-                     var ancorCal = ancor.getValueAtKey(t)
-                     var x = ancorCal[0];
-                     var y= ancorCal[1];
-                     position.setValueAtKey(t,[x,y],k >= clipLength + clipTimeStart);
-                 }
-
-                t.seconds = k + subKeyframe;
-                rotation.addKey(t);
-                
-                var funcRatio = 1;
-                var textEval = func.replace("{x}" , "("+ Number(k - clipTimeStart).toString() +")");
-                funcRatio = eval(textEval);
-                
-                if(typeof funcRatio != 'number')
-                    funcRatio = 1; //linear
-                else
-                    funcRatio = Math.max(0,Number(funcRatio));
-
-                //this.Alert(false,true,funcRatio)
-
-                rotation.setValueAtKey(t,SpinAmount * funcRatio,k >= clipLength + clipTimeStart);
-            }
-        }
-        if (slectedClips.length == 0)
-            this.Alert(true,true,"there is not selected clip, please select one and retry.");
-
-        return true;
-
-    },
-
-
-    ZoomBlur: function(ZoomAmount,blurLength,AutoCenter,func){
-        if(func == null || func=="" || func == " ")
-          func = "1";
-        var currentSeq = app.project.activeSequence;
-        var timebase = currentSeq.timebase;
-        var t = new Time();
-        var slectedClips = this.GetAllSelectedClipsV();
-        t.ticks = timebase;
-        var keyframeRatio = t.seconds;
-        var subKeyframe = t.seconds / 2;
-        for (var i = 0; i < slectedClips.length; i++) {
-            var tansformFX = this.GetEffectFromClip(slectedClips[i],"Transform","ZoomBlur");
-            var clipTimeStart = slectedClips[i].inPoint.seconds;
-            var clipLength = slectedClips[i].duration.seconds;
-            
-
-            var properties = tansformFX.properties;
-            var shutterSpeed = properties[10];
-            shutterSpeed.setValue(blurLength, true);
-
-            var width = properties[4];
-            width.setValue(100);
-
-            var ancor = properties[0];
-            var position = properties[1];
-            if (AutoCenter == "true" && !ancor.isTimeVarying())
-            {
-                var ancorCal = ancor.getValue();
-                var x = ancorCal[0];
-                var y= ancorCal[1];
-                position.setValue([x,y], true);
-            }
-
-            var scaleRatio = properties[2];
-            scaleRatio.setValue(true,true);
-
-            var scale = properties[3];
-            this.ResetKeyframes(scale,true);
-            for (var k = clipTimeStart; k < clipLength + clipTimeStart + keyframeRatio; k = k + keyframeRatio) 
-            {
-                t.seconds = k;
-                scale.addKey(t);
-                scale.setValueAtKey(t,100.0,k >= clipLength + clipTimeStart);
-
-                if (AutoCenter == "true" && ancor.isTimeVarying() && false)//need a way to get value by time.
-                {
-                     var ancorCal = ancor.getValueAtKey(t)
-                     var x = ancorCal[0];
-                     var y= ancorCal[1];
-                     position.setValueAtKey(t,[x,y],k >= clipLength + clipTimeStart);
-                 }
-
-                t.seconds = k + subKeyframe;
-                scale.addKey(t);
-                
-                var funcRatio = 1;
-                var textEval = func.replace("{x}" , "("+ Number(k - clipTimeStart).toString() +")");
-                try{
-                funcRatio = eval(textEval);
-                }catch(e){this.Alert(true,true,"Faild to Calcultae ease function!:" + e);}
-                
-                if(typeof funcRatio != 'number')
-                    funcRatio = 1; //linear
-                else
-                    funcRatio = Math.max(0,Number(funcRatio));
-
-                //this.Alert(false,true,funcRatio)
-
-                scale.setValueAtKey(t,ZoomAmount * funcRatio,k >= clipLength + clipTimeStart);
-            }
-        }
-        if (slectedClips.length == 0)
-            this.Alert(true,true,"there is not selected clip, please select one and retry.");
-
-        return true;
-
-    },
-
-
-    GodRays: function(rayLength,BlurDetails,brightnessLevel,func){
+    GodRays: function (rayLength, BlurDetails, brightnessLevel, func) {
         AutoCenter = true;
-        if(func == null || func=="" || func == " ")
-          func = "1";
+        if (func == null || func == "" || func == " ")
+            func = "1";
         var currentSeq = app.project.activeSequence;
         var timebase = currentSeq.timebase;
         var t = new Time();
@@ -1244,72 +944,64 @@ $._PPP_ = {
             var thisClip = slectedClips[i];
             var clipTrack = thisClip.trackNum;
             var timeStart = thisClip.start.seconds;
-            if(currentSeq.videoTracks.numTracks < (clipTrack+2))
-            {
-                this.Alert(true,true,"Faild Creating FX for clip ["+thisClip.name+"], not enough tracks, please add new track above track " + (clipTrack+2));
+            if (currentSeq.videoTracks.numTracks < (clipTrack + 2)) {
+                this.Alert(true, true, "Faild Creating FX for clip [" + thisClip.name + "], not enough tracks, please add new track above track " + (clipTrack + 2));
                 break;
             }
-            var topTrack = currentSeq.videoTracks[clipTrack+1];
+            var topTrack = currentSeq.videoTracks[clipTrack + 1];
             var tracksClips = topTrack.clips;
             var canPlace = true, olderFX = null;
-            for(var x=0;x<tracksClips.numItems;x++)
-            {
+            for (var x = 0; x < tracksClips.numItems; x++) {
                 var cClip = tracksClips[x];
-                if(cClip.start.seconds <= thisClip.end.seconds && cClip.end.seconds >= thisClip.start.seconds)
-                {
-                    if(cClip.name == thisClip.name && cClip.start.seconds == thisClip.start.seconds)
-                    {
-                         olderFX = cClip;
-                         olderFX.trackNum = clipTrack+1;
-                         olderFX.clipNum = x;
-                         canPlace = true;
-                         break;
+                if (cClip.start.seconds <= thisClip.end.seconds && cClip.end.seconds >= thisClip.start.seconds) {
+                    if (cClip.name == thisClip.name && cClip.start.seconds == thisClip.start.seconds) {
+                        olderFX = cClip;
+                        olderFX.trackNum = clipTrack + 1;
+                        olderFX.clipNum = x;
+                        canPlace = true;
+                        break;
                     }
                     canPlace = false;
                     break;
                 }
             }
-            if(!canPlace && olderFX==null)
-            {
-                this.Alert(true,true,"Faild Creating FX for clip ["+thisClip.name+"], the track above was not empty!, to make the FX you have to clear the above track At track " + (clipTrack+2));
+            if (!canPlace && olderFX == null) {
+                this.Alert(true, true, "Faild Creating FX for clip [" + thisClip.name + "], the track above was not empty!, to make the FX you have to clear the above track At track " + (clipTrack + 2));
                 return;
             }
             var aboveClip;
-            if(olderFX == null)
-            {
+            if (olderFX == null) {
                 var preInsert = thisClip.projectItem;
                 preInsert.setInPoint(thisClip.inPoint);
                 preInsert.setOutPoint(thisClip.outPoint);
                 preInsert.mediaType = "video";
                 preInsert.setColorLabel(5);
                 topTrack.overwriteClip(preInsert, thisClip.start);
-                topTrack = currentSeq.videoTracks[clipTrack+1]; //reloads track items;
+                topTrack = currentSeq.videoTracks[clipTrack + 1]; //reloads track items;
                 tracksClips = topTrack.clips;
-                
-                x=0;
-                for(var x=0;x<tracksClips.numItems;x++)
-                {
+
+                x = 0;
+                for (var x = 0; x < tracksClips.numItems; x++) {
                     var cClip = tracksClips[x];
-                    if(cClip.start.seconds == timeStart)
-                    {
+                    if (cClip.start.seconds == timeStart) {
                         aboveClip = cClip;
-                        
-                        aboveClip.trackNum = clipTrack+1;
+
+                        aboveClip.trackNum = clipTrack + 1;
                         aboveClip.clipNum = x;
                         break;
                     }
                 }
             }
             else
-              aboveClip = olderFX;
+                aboveClip = olderFX;
 
             var opacity = aboveClip.components[0];
             opacity.properties[1].setValue(22);
 
-            var tansformFX = this.GetEffectFromClip(aboveClip,"Transform","GodRays");
+            var tansformFX = this.GetEffectFromClip(aboveClip, "Transform", "GodRays");
             var clipTimeStart = thisClip.start.seconds;
             var clipLength = thisClip.duration.seconds;
-            
+
 
             var properties = tansformFX.properties;
             var shutterSpeed = properties[10];
@@ -1321,57 +1013,56 @@ $._PPP_ = {
             var ancor = properties[0];
             var position = properties[1];
 
-                var ancorCal = ancor.getValue();
-                var x = ancorCal[0];
-                var y= ancorCal[1];
-                position.setValue([x,y], true);
+            var ancorCal = ancor.getValue();
+            var x = ancorCal[0];
+            var y = ancorCal[1];
+            position.setValue([x, y], true);
 
             var scaleRatio = properties[2];
-            scaleRatio.setValue(true,true);
+            scaleRatio.setValue(true, true);
 
             var scale = properties[3];
-            this.ResetKeyframes(scale,true);
+            this.ResetKeyframes(scale, true);
             scale.setTimeVarying(true);
-            for (var k = clipTimeStart; k < clipLength + clipTimeStart + keyframeRatio; k = k + keyframeRatio) 
-            {
-                
+            for (var k = clipTimeStart; k < clipLength + clipTimeStart + keyframeRatio; k = k + keyframeRatio) {
+
 
                 t.seconds = k;
                 scale.addKey(t);
-                scale.setValueAtKey(t,100.0,k >= clipLength + clipTimeStart);
+                scale.setValueAtKey(t, 100.0, k >= clipLength + clipTimeStart);
 
                 if (AutoCenter == "true" && ancor.isTimeVarying() && false)//need a way to get value by time.
                 {
-                     var ancorCal = ancor.getValueAtKey(t)
-                     var x = ancorCal[0];
-                     var y= ancorCal[1];
-                     position.setValueAtKey(t,[x,y],k >= clipLength + clipTimeStart);
-                 }
+                    var ancorCal = ancor.getValueAtKey(t)
+                    var x = ancorCal[0];
+                    var y = ancorCal[1];
+                    position.setValueAtKey(t, [x, y], k >= clipLength + clipTimeStart);
+                }
 
                 t.seconds = k + subKeyframe;
                 scale.addKey(t);
-                
+
                 var funcRatio = 1;
-                var textEval = func.replace("{x}" , "("+ Number(k - clipTimeStart).toString() +")");
-                try{
-                funcRatio = eval(textEval);
-                }catch(e){this.Alert(true,true,"Faild to Calcultae ease function!:" + e);}
-                
-                if(typeof funcRatio != 'number')
+                var textEval = func.replace("{x}", "(" + Number(k - clipTimeStart).toString() + ")");
+                try {
+                    funcRatio = eval(textEval);
+                } catch (e) { this.Alert(true, true, "Faild to Calcultae ease function!:" + e); }
+
+                if (typeof funcRatio != 'number')
                     funcRatio = 1; //linear
                 else
-                    funcRatio = Math.max(0,Number(funcRatio));
+                    funcRatio = Math.max(0, Number(funcRatio));
 
-                scale.setValueAtKey(t,rayLength * funcRatio,k >= clipLength + clipTimeStart);
+                scale.setValueAtKey(t, rayLength * funcRatio, k >= clipLength + clipTimeStart);
             }
 
-            var procAmpFX = this.GetEffectFromClip(aboveClip,"ProcAmp","GodRays");
+            var procAmpFX = this.GetEffectFromClip(aboveClip, "ProcAmp", "GodRays");
             procAmpFX.properties[0].setValue(brightnessLevel);
-            procAmpFX.properties[1].setValue(100-brightnessLevel);
+            procAmpFX.properties[1].setValue(100 - brightnessLevel);
 
         }
         if (slectedClips.length == 0)
-            this.Alert(true,true,"there is not selected clip, please select one and retry.");
+            this.Alert(true, true, "there is not selected clip, please select one and retry.");
 
         return true;
 
@@ -1379,7 +1070,7 @@ $._PPP_ = {
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////End prodacut Functions END
-
+    //#region example functions
     createDeepFolderStructure: function (foldersArray, maxDepth) {
         if (typeof foldersArray !== 'object' || foldersArray.length <= 0) {
             throw new Error('No valid folders array was provided!');
@@ -1457,21 +1148,17 @@ $._PPP_ = {
             qe.project.newSequence(seqName, presetPath);
         }
     },
-
+    //#endregion
 };
-
-//$._PPP_.CameraMovement({"0":20,"1":20.596587482871627,"2":21.00998410900925,"3":21.393363403461205,"4":21.761258401958486,"5":22.11929443990146,"6":22.47035480142632,"7":22.816151402585152,"8":23.157799167038426,"9":23.496072256465848,"10":23.831534193837435,"11":24.164610333417837,"12":24.49563112481682,"13":24.824859383849596,"14":25.15250825145782,"15":25.478753454565005,"16":25.80374193379388,"17":26.127598072971708,"18":26.450428298006102,"19":26.772324538272354,"20":27.093366876556484,"21":27.413625608609177,"22":27.733162865550806,"23":28.05203390747974,"24":28.37028816626786,"25":28.687970094574958,"26":29.005119863399763,"27":29.321773939985047,"28":29.6379655702898,"29":29.953725184660307,"30":30.269080741184442,"31":30.584058018096492,"32":30.898680864231974,"33":31.212971414715973,"34":31.52695027766309,"35":31.840636696569426,"36":32.15404869221415,"37":32.46720318720354,"38":32.78011611574432,"39":33.09280252079422,"40":33.40527664038291,"41":33.71755198460806,"42":34.02964140457554,"43":34.34155715435914,"44":34.65331094689503,"45":34.964914004594064,"46":35.27637710534427,"47":35.58771062448389,"48":35.898924573247896,"49":36.2100286341259,"50":36.521032193514614,"51":36.831944372001644,"52":37.142774052578176,"53":37.45352990704506,"54":37.76422042084856,"55":38.074853916558425,"56":38.385438576180896,"57":38.69598246248253,"58":39.006493539486605,"59":39.3169796922928,"60":39.62744874636121,"61":39.937908486394804,"62":40.24836667494913,"63":40.5588310708942,"64":40.869309447851904,"65":41.17980961273172,"66":41.49033942448881,"67":41.80090681323177,"68":42.111519799811376,"69":42.422186516029,"70":42.73291522561058,"71":43.04371434610379,"72":43.3545924718679,"73":43.6655583983422,"74":43.97662114779698,"75":44.2877899967935,"76":44.599074505605685,"77":44.910484549886945,"78":45.22203035490277,"79":45.5337225326925,"80":45.84557212257534,"81":46.157590635476,"82":46.469790102617914,"83":46.782183129217586,"84":47.09478295391631,"85":47.40760351480867,"86":47.72065952307585,"87":48.03396654541014,"88":48.347541096636036,"89":48.66140074419818,"90":48.97556422651352,"91":49.29005158758706,"92":49.60488433079158,"93":49.920085595335564,"94":50.23568035973026,"95":50.551695677562606,"96":50.86816095215239,"97":51.18510825830956,"98":51.50257272153475,"99":51.820592967794425,"100":52.1392116606978,"101":52.45847614785105,"102":52.77843924487396,"103":53.099160194776964,"104":53.420705853229634,"105":53.74315216840417,"106":54.06658605019807,"107":54.3911077619364,"108":54.71683402499254,"109":55.04390211463961,"110":55.37247536370594,"111":55.70275071473621,"112":56.03496933730768,"113":56.36943198317634,"114":56.70652195094763,"115":57.046740847520276,"116":57.39076711415923,"117":57.73955800777241,"118":58.094542472305754,"119":58.45802922554859,"120":58.83422532233875,"121":59.232586260858874,"122":59.68861403007496,"123":60,"max":124},{"0":50,"max":0},{"0":100,"max":0},{"0":100,"max":0},{"0":0,"max":0},{"0":180,"max":0});
-
 
 function ObjToString(str, count) {
     return ToString(str, count);
 }
 
-function getMethods(obj)
-{
+function getMethods(obj) {
     var res = [];
-    for(var m in obj) {
-        if(typeof obj[m] == "function") {
+    for (var m in obj) {
+        if (typeof obj[m] == "function") {
             res.push(m)
         }
     }
@@ -1538,130 +1225,42 @@ function ToString(str, count) {
 
 
 
-function perlin()
-{
-    this.rand_vect = function(){
+function perlin() {
+    this.rand_vect = function () {
         var theta = Math.random() * 2 * Math.PI;
-        return {x: Math.cos(theta), y: Math.sin(theta)};
+        return { x: Math.cos(theta), y: Math.sin(theta) };
     };
-    this.dot_prod_grid = function(x, y, vx, vy){
+    this.dot_prod_grid = function (x, y, vx, vy) {
         var g_vect;
-        var d_vect = {x: x - vx, y: y - vy};
-        if (this.gradients[[vx,vy]]){
-            g_vect = this.gradients[[vx,vy]];
+        var d_vect = { x: x - vx, y: y - vy };
+        if (this.gradients[[vx, vy]]) {
+            g_vect = this.gradients[[vx, vy]];
         } else {
             g_vect = this.rand_vect();
             this.gradients[[vx, vy]] = g_vect;
         }
         return d_vect.x * g_vect.x + d_vect.y * g_vect.y;
     };
-    this.smootherstep = function(x){
-        return 6*Math.pow(x,5) - 15*Math.pow(x,4) + 10*Math.pow(x,3);
+    this.smootherstep = function (x) {
+        return 6 * Math.pow(x, 5) - 15 * Math.pow(x, 4) + 10 * Math.pow(x, 3);
     };
-    this.interp = function(x, a, b){
-        return a + this.smootherstep(x) * (b-a);
+    this.interp = function (x, a, b) {
+        return a + this.smootherstep(x) * (b - a);
     };
-    this.seed = function(){
+    this.seed = function () {
         this.gradients = {};
     };
-    this.get = function(x, y) {
+    this.get = function (x, y) {
         var xf = Math.floor(x);
         var yf = Math.floor(y);
         //interpolate
-        var tl = this.dot_prod_grid(x, y, xf,   yf);
-        var tr = this.dot_prod_grid(x, y, xf+1, yf);
-        var bl = this.dot_prod_grid(x, y, xf,   yf+1);
-        var br = this.dot_prod_grid(x, y, xf+1, yf+1);
-        var xt = this.interp(x-xf, tl, tr);
-        var xb = this.interp(x-xf, bl, br);
-        return this.interp(y-yf, xt, xb);
+        var tl = this.dot_prod_grid(x, y, xf, yf);
+        var tr = this.dot_prod_grid(x, y, xf + 1, yf);
+        var bl = this.dot_prod_grid(x, y, xf, yf + 1);
+        var br = this.dot_prod_grid(x, y, xf + 1, yf + 1);
+        var xt = this.interp(x - xf, tl, tr);
+        var xb = this.interp(x - xf, bl, br);
+        return this.interp(y - yf, xt, xb);
     };
     this.seed();
 };
-
-'use strict';
-perlin2 = {
-    rand_vect: function(){
-        var theta = Math.random() * 2 * Math.PI;
-        return {x: Math.cos(theta), y: Math.sin(theta)};
-    },
-    dot_prod_grid: function(x, y, vx, vy){
-        var g_vect;
-        var d_vect = {x: x - vx, y: y - vy};
-        if (this.gradients[[vx,vy]]){
-            g_vect = this.gradients[[vx,vy]];
-        } else {
-            g_vect = this.rand_vect();
-            this.gradients[[vx, vy]] = g_vect;
-        }
-        return d_vect.x * g_vect.x + d_vect.y * g_vect.y;
-    },
-    smootherstep: function(x){
-        return 6*Math.pow(x,5) - 15*Math.pow(x,4) + 10*Math.pow(x,3);
-    },
-    interp: function(x, a, b){
-        return a + this.smootherstep(x) * (b-a);
-    },
-    seed: function(){
-        this.gradients = {};
-    },
-    get: function(x, y) {
-        var xf = Math.floor(x);
-        var yf = Math.floor(y);
-        //interpolate
-        var tl = this.dot_prod_grid(x, y, xf,   yf);
-        var tr = this.dot_prod_grid(x, y, xf+1, yf);
-        var bl = this.dot_prod_grid(x, y, xf,   yf+1);
-        var br = this.dot_prod_grid(x, y, xf+1, yf+1);
-        var xt = this.interp(x-xf, tl, tr);
-        var xb = this.interp(x-xf, bl, br);
-        return this.interp(y-yf, xt, xb);
-    }
-};
-perlin2.seed();
-
-
-function NoiseSeed()
-{
-    'use strict';
-var tSeed = {
-    rand_vect: function(){
-        var theta = Math.random() * 2 * Math.PI;
-        return {x: Math.cos(theta), y: Math.sin(theta)};
-    },
-    dot_prod_grid: function(x, y, vx, vy){
-        var g_vect;
-        var d_vect = {x: x - vx, y: y - vy};
-        if (this.gradients[[vx,vy]]){
-            g_vect = this.gradients[[vx,vy]];
-        } else {
-            g_vect = this.rand_vect();
-            this.gradients[[vx, vy]] = g_vect;
-        }
-        return d_vect.x * g_vect.x + d_vect.y * g_vect.y;
-    },
-    smootherstep: function(x){
-        return 6*Math.pow(x,5) - 15*Math.pow(x,4) + 10*Math.pow(x,3);
-    },
-    interp: function(x, a, b){
-        return a + this.smootherstep(x) * (b-a);
-    },
-    seed: function(){
-        this.gradients = {};
-    },
-    get: function(x, y) {
-        var xf = Math.floor(x);
-        var yf = Math.floor(y);
-        //interpolate
-        var tl = this.dot_prod_grid(x, y, xf,   yf);
-        var tr = this.dot_prod_grid(x, y, xf+1, yf);
-        var bl = this.dot_prod_grid(x, y, xf,   yf+1);
-        var br = this.dot_prod_grid(x, y, xf+1, yf+1);
-        var xt = this.interp(x-xf, tl, tr);
-        var xb = this.interp(x-xf, bl, br);
-        return this.interp(y-yf, xt, xb);
-    }
-};
-tSeed.seed();
-return tSeed;
-}

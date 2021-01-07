@@ -1,6 +1,6 @@
 body{
     position: relative;
-    height: 100vh;
+    height: calc(100vh - 41px);
     width: 100vw;
     margin: 0;
     padding-top: 41px;
@@ -16,6 +16,19 @@ body > button
 {
     position: absolute;
     top: 0;
+}
+
+button.normal
+{
+    position: relative;
+    filter: hue-rotate(160deg);
+}
+
+body > button:nth-of-type(2)
+{
+    top:auto;
+    right: 0;
+    bottom: 0;
 }
 
 .fxUI
@@ -50,6 +63,23 @@ body > button
     margin-bottom: calc(0.3*var(--titleHeight));
     text-transform: capitalize;
     box-shadow: inset -48vw 0 31vw -24vw rgba(255, 255, 255, 0.72);
+}
+
+#FX_raBlur::before,#FX_zoBlur::before
+{
+    box-shadow: inset -48vw 0 31vw -24vw rgba(150, 200, 255, 0.72);
+
+}
+
+#FX_SoundFX::before
+{
+    box-shadow: inset -48vw 0 31vw -24vw rgba(255, 200, 150, 0.72);
+
+}
+#FX_Glow::before
+{
+    box-shadow: inset -48vw 0 31vw -24vw rgba(254, 255, 168, 0.883);
+
 }
 
 .fxUI[closed="false"]::before
@@ -167,9 +197,10 @@ input, input + label
     height: var(--textSize);
     width: 20%;
     line-height: 100%;
-    direction: rtl;
+    direction: ltr;
     padding-right: 2%;
 }
+::-webkit-textfield-decoration-container {flex-direction: row-reverse}
 
 input + label
 {
@@ -367,4 +398,96 @@ span.timeer
 #dialog-confirm
 {
     direction: rtl;
+}
+
+.hider div.fxUI[closed="true"]
+{
+    display: none;
+}
+
+.viewToggle
+{
+    filter: hue-rotate(180deg);
+    -webkit-filter: hue-rotate(180deg);
+    top: auto;
+    right: 0;
+    transform:  translate(-10%,-150%) !important;
+    -webkit-transform:  translate(-10%,-150%) !important;
+    -moz-transform:  translate(-10%,-150%) !important;
+    -ms-transform:  translate(-10%,-150%) !important;
+    -o-transform:  translate(-10%,-150%) !important;
+    font-size: 200%;
+    line-height: 100%;
+}
+
+.hider .viewToggle
+{
+    filter: none;
+    -webkit-filter: none;
+}
+
+label.markerlablel {
+    display: inline-block;
+    position: relative;
+    width: 0.2em;
+    border-radius: 0;
+    text-align: center;
+    transform: none;
+    pointer-events: all;
+    right: auto;
+    height: 0.5em;
+    margin: 0 2%;
+}
+
+label.audiolablel
+{
+    position: relative;
+    left: auto;
+    right: auto;
+    max-width: 10%;
+    margin: 0.5% 0.7%;
+    text-align: justify;
+    border-radius: 0.5em;
+    pointer-events: all;
+    transform: none;
+    min-width: 90px;
+    height: auto;
+    font-size: 90%;
+}
+
+.markersAudios {
+    min-width: 300px;
+    overflow-y: auto;
+    max-height: 17vh;
+}
+
+.bs_table
+{
+    display: inline-block !important;
+}
+
+p#markerSts h2, p#markerSts {
+    margin: 0;
+    text-align: right;
+    position: absolute;
+    width: 97%;
+}
+input#ms_offset {
+    text-align: center;
+    font-size: 200%;
+    height: auto;
+    position: relative;
+    transform: none;
+    left: 0;
+    right: 0;
+    margin: 1% 0.5%;
+    background-color: hsla(0, 0%, 91%, 0.21);
+}
+
+body{
+    overflow-y: auto;
+}
+
+.title.right {
+    z-index: 99999;
 }
