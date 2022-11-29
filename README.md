@@ -10,7 +10,7 @@ Preimiere Pro CEP plugin that add effects and utils using native premiere functi
 
 ### Using automation:
 * FAST sound placment using Marker psoition in timeline.
-* Silence Cut - cuts out silnce below threshold.
+* Silence Cut - cuts out silnce below threshold(using FFmpeg).
 
 ## Built using:
 * JS.
