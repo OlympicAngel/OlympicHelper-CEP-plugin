@@ -20,9 +20,182 @@ $._PPP_ = {
     AddFXDataTrack: null,
     AddFXDataPosit: null,
     AddFXDataOldPos: null,
+    AutoCutBin: null,
     global: { frameTime: undefined, currentSeq: undefined, wiggleX: undefined, wiggleY: undefined },
 
+
     //#region helper functions
+
+    CutAt: function (at) {
+        try {
+            if (at.start_at >= at.end_at)
+                return new Error("wrong timing")
+
+            var clip_n_track = this.getSelectedClip_n_Track(true);
+
+            if (!clip_n_track.clip)
+                return new Error("noClip");
+
+            if (clip_n_track.clip.inPoint.seconds >= at.end_at) //if cut is before clip's in
+                return new Error("no cut needed");
+
+
+            var clip = clip_n_track.clip;
+
+            if (at.start_at != 0) { // if zero - no left side
+
+                //#region creating the left side of the cut
+                var cut_start_time = new Time(0);
+                cut_start_time.seconds = at.start_at;
+
+                var pre_cut_clip = clip.projectItem.createSubClip(clip.name + "_cutAt_" + at.start_at,
+                    clip.inPoint, //start time
+                    cut_start_time, //end time,
+                    0, //allows in/out user-edit
+                    1, 1 //take video & audio
+                );
+
+                if (!this.AutoCutBin)  //create bin once
+                    this.AutoCutBin = this.VerifyBin("OlympicHelper SilenceCuts")
+                pre_cut_clip.moveBin(this.AutoCutBin);
+                //#endregion
+                clip_n_track.track.overwriteClip(pre_cut_clip, clip.start) //insert before cut
+            }
+
+            if (at.end_at < clip.outPoint.seconds) { // if above end time - no right side
+
+                //#region re-create the rest of the clip (right side)
+                var clip_rest = clip.projectItem;
+                var newClipStartAt = new Time();
+                newClipStartAt.seconds = at.end_at;
+                clip_rest.setInPoint(newClipStartAt, 4)
+
+                var after_cut_start = new Time();
+                after_cut_start.seconds = clip.start.seconds + (at.start_at - clip.inPoint.seconds) //update rest of the clip timeline location
+                //#endregion
+                clip_n_track.track.overwriteClip(clip_rest, after_cut_start)//overwrite old clip
+
+                //remove left overs
+                this.AutoCut_getLAstClip(clip_n_track).remove(true, true)
+                clip.remove(true, true);
+                for (var i = 0; i < clip_n_track.audio.length; i++) {
+                    var audioClip = clip_n_track.audio[i]
+                    audioClip.remove(true, true);
+                }
+            }
+
+            var lastClip = this.AutoCut_getLAstClip(clip_n_track)
+            if (lastClip)
+                lastClip.setSelected(true, false);
+
+            return "end";
+        }
+        catch (e) {
+            delete e.source
+            return ToString(e, 2)
+        }
+    },
+
+    AutoCut_getLAstClip: function (clip_n_track) {
+        var video_track = app.project.activeSequence.videoTracks;
+        var clips_arr = video_track[clip_n_track.trackNum].clips;
+        var lastClip = clips_arr[clips_arr.numItems - 1];
+        return lastClip;
+    },
+
+    getSelectedClip_n_Track: function () {
+        var currentSeq = app.project.activeSequence
+        var numTracks = currentSeq.videoTracks.numTracks;
+        for (var videoTrackIndex = 0; videoTrackIndex < numTracks; videoTrackIndex++) {
+            var cVideoTrack = currentSeq.videoTracks[videoTrackIndex];
+
+            var clipCount = cVideoTrack.clips.numItems;
+            for (var i = 0; i < clipCount; i++) {
+                var clipPos = clipCount - i - 1;
+                var cClip = cVideoTrack.clips[clipPos]
+                if (cClip.isSelected()) {
+                    return {
+                        clip: cClip,
+                        track: currentSeq.videoTracks[videoTrackIndex],
+                        trackNum: videoTrackIndex,
+                        clipPos: clipPos,
+                        audio: this.getAudioOfClip(cClip, clipPos)
+                    }
+                }
+            }
+        }
+        return {};
+    },
+
+    AutoCut_end: function () {
+        try {
+            var lastClipData = this.getSelectedClip_n_Track();
+            var lastClip = lastClipData.clip;
+            if (!lastClip)
+                return "noClip";
+
+            var lastClipIndex = lastClipData.clipPos;
+            var currentSeq = app.project.activeSequence;
+            var removeCount = 0;
+            for (var i = 0; i < currentSeq.audioTracks.numTracks; i++) {
+
+                var track = currentSeq.audioTracks[i];
+                var clipCount = track.clips.numItems;
+                for (var x = clipCount - 1; x > lastClipIndex; x--) {
+                    var cClip = track.clips[x];
+                    if (cClip) {
+                        cClip.remove(true, true)
+                        removeCount++;
+                    }
+
+                }
+            }
+
+            lastClip.projectItem.clearInPoint() //reset origin in/out
+
+            return removeCount
+        }
+        catch (e) {
+            delete e.source
+            return ToString(e, 2)
+        }
+    },
+
+    getSelectedClipPath: function () {
+        var clip = this.getSelectedClip_n_Track().clip;
+        if (!clip)
+            return new Error("noClip")
+        return clip.projectItem.getMediaPath();
+    },
+    getClipMetaData: function () {
+        try {
+            var clip = this.getSelectedClip_n_Track().clip;
+            if (!clip)
+                return new Error("noClip")
+            return clip.projectItem.getProjectColumnsMetadata();
+        } catch (e) {
+            delete e.source
+            return ToString(e, 2)
+        }
+
+    },
+
+    getAudioOfClip: function (clip, clipIndex) {
+        var currentSeq = app.project.activeSequence;
+        var audio_arr = [];
+        var numTracks = currentSeq.audioTracks.numTracks;
+        for (var audioTrackIndex = 0; audioTrackIndex < numTracks; audioTrackIndex++) {
+            var cAudioTrack = currentSeq.audioTracks[audioTrackIndex];
+
+            var cClip = cAudioTrack.clips[clipIndex];
+            if (cClip && cClip.projectItem.nodeId == clip.projectItem.nodeId) {
+                audio_arr.push(cClip)
+            }
+
+        }
+        return audio_arr;
+    },
+
     AddEffect: function (effctName, track, position, times, fromSeq) {
         try {
             var openedSeqID = app.project.activeSequence.sequenceID;
@@ -86,7 +259,6 @@ $._PPP_ = {
 
 
                     if (isInFormatAudio(currentExt)) {
-                        //this.Alert(false,true,(currentItem.name))
                         audioFiles = audioFiles + "///?" + currentItem.nodeId + "|||?" + currentItem.name;
 
                     }
@@ -110,14 +282,11 @@ $._PPP_ = {
         var seq = this.global.currentSeq;
 
         var clipArray = [];
-        var trcksC = 0, clipC = 0;
 
         for (var s = 0; s < seq.videoTracks.numTracks; s++) {
-            trcksC++;
             var firstVideoTrack = seq.videoTracks[s];
 
             for (var i = 0; i < firstVideoTrack.clips.numItems; i++) {
-                clipC++;
                 var firstClip = firstVideoTrack.clips[i]
                 if (firstClip.isSelected()) {
                     firstClip.trackNum = s;
@@ -131,7 +300,6 @@ $._PPP_ = {
     LocateOrLoad: function (filePath, binObj, clipName) {
         var originclipName = clipName;
         var folderSearch = app.project.rootItem;
-        var rootFiles = folderSearch.children;
         var folderObj = binObj, clipProj;
 
         for (var t = 0; t < folderObj.children.numItems; t++) {
@@ -146,7 +314,7 @@ $._PPP_ = {
             this.Alert(true, true, "Error loading the file '" + clipName + "'!")
         }
 
-        folderObj = this.VerifyBin();
+        folderObj = this.VerifyBin("OlympicHelper Files");
         for (var t = 0; t < folderObj.children.numItems; t++) {
             var curFile = folderObj.children[t];
             if (curFile.name == originclipName) {
@@ -167,7 +335,7 @@ $._PPP_ = {
                 return curFile;
         }
     },
-    VerifyBin: function () {
+    VerifyBin: function (name) {
         var folderSearch = app.project.rootItem;
         var rootFiles = folderSearch.children;
 
@@ -176,20 +344,20 @@ $._PPP_ = {
         for (var t = 0; t < rootFiles.numItems; t++) {
             var curFile = rootFiles[t];
             if (curFile.type == 2)
-                if (curFile.name == "OlympicHelper Files") {
+                if (curFile.name == name) {
                     folderObj = curFile;
                     folderExt = true;
                     break;
                 }
         }
         if (!folderExt) {
-            app.project.rootItem.createBin("OlympicHelper Files");
+            app.project.rootItem.createBin(name);
             folderSearch = app.project.rootItem;
             rootFiles = folderSearch.children;
             for (var t = 0; t < rootFiles.numItems; t++) {
                 var curFile = rootFiles[t];
                 if (curFile.type == 2)
-                    if (curFile.name == "OlympicHelper Files") {
+                    if (curFile.name == name) {
                         folderObj = curFile;
                         folderExt = true;
                         break;
@@ -222,10 +390,15 @@ $._PPP_ = {
         if (this.global.wiggleY == undefined)
             this.global.wiggleY = new perlin();
 
+        if (this.global.wiggleR == undefined)
+            this.global.wiggleR = new perlin();
+
         if (type == "x" || type == "X")
             return this.global.wiggleX.get(t * freq, 4) * amp;
-        else
+        else if (type == "y" || type == "Y")
             return this.global.wiggleY.get(t * freq, 4) * amp;
+        else if (type == "r" || type == "R")
+            return this.global.wiggleR.get(t * freq, 4) * amp;
 
     },
     IsCustomFX: function (Effect, customFX) {
@@ -446,7 +619,7 @@ $._PPP_ = {
             return this.GetSeq(projectItemRef);
         else {
             var clipSeq;
-            clipSeq = app.project.createNewSequenceFromClips(slectedClip.nodeId + "_" + seqNamePrefix + "_CLOSE-ME!", projectItemRef, this.VerifyBin());
+            clipSeq = app.project.createNewSequenceFromClips(slectedClip.nodeId + "_" + seqNamePrefix + "_CLOSE-ME!", projectItemRef, this.VerifyBin("OlympicHelper Files"));
             app.project.openSequence(openedSeqID);
             clipSeq.audioTracks[1].setMute(1);
 
@@ -518,13 +691,12 @@ $._PPP_ = {
 
         var currentSeq = app.project.activeSequence;
         if (!currentSeq) {
-            this.Alert(true, true, "an active Sequence cannot be found! please open a sequence and then retry!");
-            return;
+            return new Error("noSequence")
         }
         var timebase = currentSeq.timebase;
         var clipProj;
         if (!(clipName.split("?///").length > 1)) {
-            var folderObj = this.VerifyBin();
+            var folderObj = this.VerifyBin("OlympicHelper Files");
 
             clipProj = this.LocateOrLoad(path + "\\audio\\", folderObj, clipName);
         }
@@ -553,15 +725,11 @@ $._PPP_ = {
         app.project.deleteSequence(tempSeq);
         // end of function
 
-
-
-
         var audioTracks = currentSeq.audioTracks;
 
         var TrackAllMarkers = currentSeq.markers;
         if (!TrackAllMarkers || TrackAllMarkers.numMarkers == 0) {
-            this.Alert(true, true, "no Marker was found! (is it the right color?) in order to use this function you must add markers in your sequence!");
-            return;
+            return new Error("noMarker");
         }
         var numMarkers = TrackAllMarkers.numMarkers;
         var markers = TrackAllMarkers;
@@ -597,6 +765,10 @@ $._PPP_ = {
             }
         }
 
+        if (allMarkers.length == 0)
+            return new Error("noMarker");
+
+
         var markerPostionT;
         for (var i = 0; i < allMarkers.length; i++)//עבור כל מארקר
         {
@@ -630,7 +802,7 @@ $._PPP_ = {
                 audioTracks[x].overwriteClip(clipProj, prefixTime);
             }
             else {
-                this.Alert(false, true, "all the tracks at [marker " + i + "] are full - unable to add the audio fx! please add new empty audio track!");
+                return new Error("moreTrack")
             }
 
 
@@ -728,21 +900,16 @@ $._PPP_ = {
         this.GetClipFrameTime();
         var slectedClips = this.GetAllSelectedClipsV();
         if (slectedClips.length == 0)
-            return this.Alert(true, true, "there is not selected clip, please select one and retry.");
+            return new Error("noClip");
 
-        var result = "//- ";
         for (var i = 0; i < slectedClips.length; i++) {
-            var r = callback.call(this, slectedClips[i]);
-            if (r instanceof Time) {
-                r = r.seconds + "";
-            }
-            result += r + " //- ";
+            this.clipCount = i + "/" + slectedClips.length;
+            callback.call(this, slectedClips[i]);
         }
-        return result;
     },
 
-    CameraMovement: function (multi, rate, horizental, vertical, isAuto, shutter) {
-        this.BaseApplyFX(function (slectedClip) {
+    CameraMovement: function (multi, rate, horizental, vertical, rotationVal, isAuto, shutter) {
+        return this.BaseApplyFX(function (slectedClip) {
             var tansformFX = this.GetEffectFromClip(slectedClip, "Transform", "cameraMovement");
             var clipTimeStart = slectedClip.inPoint.seconds;
             var clipLength = slectedClip.duration.seconds;
@@ -756,40 +923,54 @@ $._PPP_ = {
             this.ResetKeyframes(scale, true);
             var position = properties[1];
             this.ResetKeyframes(position, true);
+            var rotation = properties[7];
+            this.ResetKeyframes(rotation, true);
+
             var t = new Time();
-            for (var k = clipTimeStart; k < clipLength + clipTimeStart + this.global.frameTime; k = k + this.global.frameTime) {
+            var endWhenK = clipLength + clipTimeStart + this.global.frameTime;
+            for (var k = clipTimeStart; k < endWhenK; k = k + this.global.frameTime) {
                 var framesFromClipStart = (k - clipTimeStart) / this.global.frameTime;
                 t.seconds = k;
                 position.addKey(t);
+                rotation.addKey(t);
 
                 var multiFrame = this.FxGetUserKeyframe(multi, framesFromClipStart) / 100;
                 var verticalFrame = this.FxGetUserKeyframe(vertical, framesFromClipStart) / 200;
                 var horizentalFrame = this.FxGetUserKeyframe(horizental, framesFromClipStart) / 200;
+
+                var rotationFrame = this.FxGetUserKeyframe(rotationVal, framesFromClipStart);
+                var rotationValue = this.wiggle(rate["0"] / 5, rotationFrame, t.seconds, "r");
+
                 var newPositionX = 0.5 + this.wiggle(rate["0"] / 3, multiFrame * verticalFrame, t.seconds, "x");
                 var newPositionY = 0.5 + this.wiggle(rate["0"] / 3, multiFrame * horizentalFrame, t.seconds, "y");
-                if (isNaN(newPositionX)) {
-                    throw "sdfd";
-                }
                 if (isAuto["0"] == 1) {
                     scale.addKey(t);
-                    scale.setValueAtKey(t, (100 + multiFrame * 1000 * (Math.max(Math.abs(0.5 - newPositionX), Math.abs(0.5 - newPositionY)))), k >= clipLength + clipTimeStart);
+                    scale.setValueAtKey(t,
+                        Math.max(100 + multiFrame * 1001 * (Math.max(Math.abs(0.5 - newPositionX), Math.abs(0.5 - newPositionY))),
+                            100 + Math.pow(Math.abs(rotationValue) * 2, 1.25)),
+                        k >= clipLength + clipTimeStart);
                 }
                 else if (this.FxEndOfUserKeyframs(multi, framesFromClipStart) ||
                     this.FxEndOfUserKeyframs(vertical, framesFromClipStart) ||
-                    this.FxEndOfUserKeyframs(horizental, framesFromClipStart)) {
+                    this.FxEndOfUserKeyframs(horizental, framesFromClipStart) ||
+                    this.FxEndOfUserKeyframs(rotationVal, framesFromClipStart)) {
                     scale.addKey(t);
-                    scale.setValueAtKey(t, (100 + multiFrame * 100 * (Math.max(horizentalFrame, verticalFrame) * 2)), k >= clipLength + clipTimeStart);
+                    scale.setValueAtKey(t,
+                        Math.max(100 + multiFrame * 100 * (Math.max(horizentalFrame, verticalFrame) * 2),
+                            100 + Math.pow(rotationFrame, 1.25)),
+                        k >= clipLength + clipTimeStart);
                 }
                 position.setValueAtKey(t, [newPositionX, newPositionY], k >= clipLength + clipTimeStart);
+                rotation.setValueAtKey(t, rotationValue, k >= clipLength + clipTimeStart);
+
             }
             this.global.wiggleX = undefined;
             this.global.wiggleY = undefined;
         });
-        return this.global.frameTime;
     },
 
     BaseShake: function (multi, rate, horizental, vertical, isAuto, shutter) {
-        this.BaseApplyFX(function (slectedClip) {
+        return this.BaseApplyFX(function (slectedClip) {
 
             var tansformFX = this.GetEffectFromClip(slectedClip, "Transform", "baseShake");
             var clipTimeStart = slectedClip.inPoint.seconds;
@@ -834,7 +1015,7 @@ $._PPP_ = {
     },
 
     ZoomBlur: function (ScaleAmount, blurLength, AutoCenter) {
-        var res = this.BaseApplyFX(function (slectedClip) {
+        return this.BaseApplyFX(function (slectedClip) {
 
             var tansformFX = this.GetEffectFromClip(slectedClip, "Transform", "ZoomBlur");
             var clipTimeStart = slectedClip.inPoint.seconds;
@@ -876,12 +1057,10 @@ $._PPP_ = {
             }
             return x;
         });
-        return res;
-
     },
 
     SpinBlur: function (SpinAmount, blurLength, AutoCenter) {
-        var res = this.BaseApplyFX(function (slectedClip) {
+        return this.BaseApplyFX(function (slectedClip) {
 
             var tansformFX = this.GetEffectFromClip(slectedClip, "Transform", "SpinBlur");
             var clipTimeStart = slectedClip.inPoint.seconds;
@@ -923,8 +1102,6 @@ $._PPP_ = {
             }
             return x;
         });
-        return res;
-
     },
     //#endregion
 
@@ -1065,7 +1242,6 @@ $._PPP_ = {
             this.Alert(true, true, "there is not selected clip, please select one and retry.");
 
         return true;
-
     },
 
 

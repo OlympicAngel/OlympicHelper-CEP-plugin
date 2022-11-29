@@ -1,12 +1,11 @@
-﻿
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 
 <head>
 
-<title>
-OlympicHelper FX1
-</title>
+	<title>
+		OlympicHelper FX1
+	</title>
 
 
 	<meta charset="utf-8">
@@ -14,30 +13,42 @@ OlympicHelper FX1
 
 	<script src="./lib/CSInterface.js" charset="utf-8"></script>
 	<script src="./ext.js" charset="utf-8"></script>
-    <script src="./css/jquery-ui-1.12.1.custom/jquery-ui.js" charset="utf-8"></script>
-    
+	<script src="./css/jquery-ui-1.12.1.custom/jquery-ui.js" charset="utf-8"></script>
+
 	<script src="./lib/Vulcan.js" charset="utf-8"></script>
 	<script src="./lib/main.js" charset="utf-8"></script>
-    <script src="./lib/keyframe.js" charset="utf-8"></script>
+	<script src="./lib/errors.js" charset="utf-8"></script>
+	<script src="./lib/autoSilence.js" charset="utf-8"></script>
 
-	
-    <link href="css/style.css" rel="stylesheet" type="text/css">
-    <link href="css/v2.css" rel="stylesheet" type="text/css">
+	<script src="./lib/keyframe.js" charset="utf-8"></script>
+
+
+	<link href="css/style.css" rel="stylesheet" type="text/css">
+	<link href="css/v2.css" rel="stylesheet" type="text/css">
 
 	<link href="./css/jquery-ui-1.12.1.custom/jquery-ui.min.css" rel="stylesheet" type="text/css">
 
+	<!-- Google tag (gtag.js) -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-LF4QFVX23H"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-
-  <script>
-
-  if(!window.location.hash) {
-        window.location = window.location + '#loaded';
-        window.location.reload();
-    }else{
-      //Init stuff here
-    }
+		gtag('config', 'G-LF4QFVX23H');
 	</script>
-  
+
+
+	<script>
+
+		if (!window.location.hash) {
+			window.location = window.location + '#loaded';
+			window.location.reload();
+		} else {
+			//Init stuff here
+		}
+	</script>
+
 	<script type="text/javascript">
 
 		$(document).ready(function () {
@@ -46,7 +57,7 @@ OlympicHelper FX1
 			// handlers, instead of directly invoking ExtendScript .This givs the JavaScript layer a chance
 			// to pass data into the ExtendScript layer, and process the results.
 
-		
+
 
 			$("#toggleproxy").on("click", function (e) {
 				e.preventDefault();
@@ -118,77 +129,154 @@ OlympicHelper FX1
 	</script>
 </head>
 
-<body onLoad="onLoaded()" oncontextmenu="return false;" >
-    <div id="dialog-confirm"></div>
-    <a href="https://youtube.com/OlympicAngel" target="_blank"><div class="title right">OlympicHelper<p>By OlympicAngel</p></div></a>
-	<button onclick="tooglelang();"><label class="HE">English?</label><label class="EN">עברית?</label></button>    
+<body onLoad="onLoaded()" oncontextmenu="return false;">
+	<div id="dialog-confirm"></div>
+	<a href="https://youtube.com/OlympicAngel" target="_blank">
+		<div class="title right">OlympicHelper<p>By OlympicAngel</p>
+		</div>
+	</a>
+	<button onclick="tooglelang();"><label class="HE">English?</label><label class="EN">עברית?</label></button>
 
-<button onclick="toggleView();" class="viewToggle">👁️</button>   
+	<button onclick="toggleView();" class="viewToggle">👁️</button>
 
-<div id="markerHTML">
-
-
-<table tabindex="0">
-	<tr>
-		<td>
-			<label class="EN">Marker Color:</label><label class="HE">צבע המרקר:</label>
-		</td>
-		<td>
-			<center id="markerHolder"></center>
-			<script>this.RenderMarkers()</script>
-		</td>
-	</tr>
-</table>
-
-<table tabindex="0">
-	<tr>
-		<td>
-			<label class="EN">SoundFX Selection:</label> <label class="HE">צליל רקע לבחירה:</label>
-		</td>
-		<td>
-			<center id="markersAudios" class="markersAudios"></center>
-								<script>GetAudioFX()</script>
-		</td>
-	</tr>
-</table>
+	<div id="markerHTML">
 
 
-<table tabindex="0">
-	<tr>
-		<td>
-			<label class="EN">Custom Sound:</label><label class="HE">צליל מותאם אישית:</label>
-		</td>
-		<td>
-			<center id="ProjmarkersAudios" class="markersAudios"></center>
-			<script>
-				$(document).ready(function () { GetProjAudioFX(); })
-			</script>
-		</td>
-	</tr>
-</table>
+		<table tabindex="0">
+			<tr>
+				<td>
+					<label class="EN">Marker Color:</label><label class="HE">צבע המרקר:</label>
+				</td>
+				<td>
+					<center id="markerHolder"></center>
+					<script>this.RenderMarkers()</script>
+				</td>
+			</tr>
+		</table>
 
-<table tabindex="0">
-	<tr>
-		<td>
-			<label class="EN">Offset:</label><label class="HE">סטייה:</label>
-		</td>
-		<td>
-				<input id="ms_offset" base="50" value="50" max="100" step="1" type="number" min="0">%
-		</td>
-	</tr>
-</table>
-<table tabindex="0" style="display: none;"></table>
-<center><p id="markerSts">DATA</p></center>
+		<table tabindex="0">
+			<tr>
+				<td>
+					<label class="EN">SoundFX Selection:</label> <label class="HE">צליל רקע לבחירה:</label>
+				</td>
+				<td>
+					<center id="markersAudios" class="markersAudios"></center>
+					<script>GetAudioFX()</script>
+				</td>
+			</tr>
+		</table>
 
-		<button id="bs_applay" class="bs_table" onClick="ms_click()"><span class="EN">Apply</span><span class="HE">החל אפקט</span></button>
-		<button id="bs_reload" class="bs_table" onClick="GetProjAudioFX()"><span class="EN">Rescan project audio</span><span class="HE">סרוק קבצי אדיו מפרוייקט</span></button>
+
+		<table tabindex="0">
+			<tr>
+				<td>
+					<label class="EN">Custom Sound:</label><label class="HE">צליל מותאם אישית:</label>
+				</td>
+				<td>
+					<center id="ProjmarkersAudios" class="markersAudios"></center>
+					<script>
+						$(document).ready(function () { GetProjAudioFX(); })
+					</script>
+				</td>
+			</tr>
+		</table>
+
+		<table tabindex="0">
+			<tr>
+				<td>
+					<label class="EN">Offset:</label><label class="HE">סטייה:</label>
+				</td>
+				<td>
+					<input id="ms_offset" base="50" value="50" max="100" step="1" type="number" min="0">%
+				</td>
+			</tr>
+		</table>
+		<table tabindex="0" style="display: none;"></table>
+		<center>
+			<p id="markerSts">DATA</p>
+		</center>
+
+		<button id="bs_applay" class="bs_table" onClick="ms_click()"><span class="EN">Apply</span><span class="HE">החל
+				אפקט</span></button>
+		<button id="bs_reload" class="bs_table" onClick="GetProjAudioFX()"><span class="EN">Rescan project
+				audio</span><span class="HE">סרוק קבצי אדיו מפרוייקט</span></button>
 		<Script>INImarkersCall()</Script>
-</div>
+	</div>
 
 
+	<div id="autoCut" onmouseover="SilenceCut_getAudioTracks()">
+		<table tabindex="0">
+			<tr>
+				<td>
+					<label class="EN">Audio Track:</label><label class="HE">פס קול</label>
+				</td>
+				<td>
+					<center>
+						<label class="EN">Select audio track to analyze audio from</label>
+						<label class="HE">בחר פס קול שממנו יפוענך האדיו</label>:
+						<input class="normal" id="s_c_track" type="number" step="1" min="1" max="1" value="1" />
+					</center>
+				</td>
+			</tr>
+		</table>
+		<table tabindex="0">
+			<tr>
+				<td>
+					<label class="EN">Silence Volume:</label><label class="HE">עוצמת השקט</label>
+				</td>
+				<td>
+					<center>
+						<label class="EN">Define "Silence" for volume below</label>
+						<label class="HE">הגדר כשקט כשהווליום מתחת</label>:
+						<input class="normal" id="s_c_db" step="1" type="number" min="-100" max="-15" value="-35" />db
+					</center>
+				</td>
+			</tr>
+		</table>
+		<table tabindex="0">
+			<tr>
+				<td>
+					<label class="EN">Silence Duration:</label><label class="HE">אורך שקט</label>
+				</td>
+				<td>
+					<center>
+						<label class="EN">Define as "Silence" when duration is longer then</label>
+						<label class="HE">הגדר כ"שקט" כאשר האורך גדול מ</label>:
+						<input class="normal" id="s_c_duration" type="number" step="50" min="100" max="10000"
+							value="300" />ms
+					</center>
+				</td>
+			</tr>
+		</table>
+		<table tabindex="0"></table>
+		<button onclick="SilenceCut()">Cut Silence</button>
+		<label class="EN" style="font-size: 1.2em;color:red">NOTICE! anything that is to the RIGHT of the selected clip
+			WILL get
+			deleted!! - there is no undo! (thats sucks I know..)<br>
+			<b>Its also recommended to use this feature in a new sequence! <small style="opacity: 0.8;">(fixes some
+					possible bugs in sequence
+					with multiple clips)</small></b></label>
+		<label class="HE" style="font-size: 1.2em;color:red">שימו לב! כל דבר שמ*ימין* לקליפ שכרגע מסומן ימחק!! - אין
+			אנדו! (כע אני יודע זה מעפן)<br>
+			<b>בנוסף - מומלץ להשתמש עם הפיצ'ר הזה בסיקוונס חדש! <small style="opacity: 0.8;">(מתקן בעיות שקורות בסיקוונס
+					עם כמה
+					קליפים)</small></b></label>
+	</div>
+	<div class="cutLoader" style="display: none;">
+		<dot></dot>
+		<dot></dot>
+		<dot></dot>
+		<dot></dot>
+		<dot></dot>
+		<dot></dot>
+		<p>
 
-<script src="./lib/EffectUI.js" charset="utf-8"></script>
-<button class="normal" onclick="window.location.reload();"><label class="HE">רענן</label><label class="EN">Refresh</label></ד>    
+		</p>
+	</div>
+
+	<script src="./lib/EffectUI.js" charset="utf-8"></script>
+	<button class="normal" onclick="window.location.reload();"><label class="HE">רענן</label><label
+			class="EN">Refresh</label></ד>
 
 </body>
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<ExtensionManifest Version="5.0" ExtensionBundleId="com.OlympicAngel.OlympicHelper" ExtensionBundleVersion="11.1"
+<ExtensionManifest Version="10.0" ExtensionBundleId="com.OlympicAngel.OlympicHelper" ExtensionBundleVersion="11.1"
 ExtensionBundleName="OlympicAngel.OlympicHelper" 
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<ExtensionList>
@@ -14,7 +14,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 			<Locale Code="All" />
 		</LocaleList>
 		<RequiredRuntimeList>
-			<RequiredRuntime Name="CSXS" Version="6.0" />
+			<RequiredRuntime Name="CSXS" Version="10.0" />
 		</RequiredRuntimeList>
 	</ExecutionEnvironment>
 
