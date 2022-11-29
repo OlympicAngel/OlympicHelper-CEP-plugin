@@ -1,17 +1,19 @@
 # OlympicHelper-CEP-plugin
-A Premiere Pro CEP plugin that adds effects and helper-tools to premiere.
-This plugin uses bulit-in effect of premiere and manipulate them using keyframes to allow new effect that cannot be created in "vanilla" premire.
+Preimiere Pro CEP plugin that add effects and utils using native premiere functions + automations!
 
-# Such-as
--Camere Movements - with randomized path and user-cntroled variables such as speed, motion-blur and more.
--Camea Shakes - same as camera but more random.
--Zoom Blur & Radial Blur.
--Glow.
-and more...
+### Using prebuild effects to add:
+* Organic Camera Movements(smooth, w/ motion blur).
+* Camera Shakes(hard, w/ motion blur).
+* Radial Blur(inspired by Photoshop fx).
+* Zoom Blur(inspired by Photoshop fx).
+* Glow.
 
-# also
-support for user keyframes to the custom effects from the plugin!
+### Using automation:
+* FAST sound placment using Marker psoition in timeline.
+* Silence Cut - cuts out silnce below threshold.
 
-# what langs?
-UI is HTML-bases and JS controlled for page behavor.
-Fx and main logic using JSX with JS communication.
+## Built using:
+* JS.
+* HTML.
+* CSS.
+* Extensive knowlage on how Premiere works in order to abuse it lol (radial/zoom blur is basicly a bug lol).
