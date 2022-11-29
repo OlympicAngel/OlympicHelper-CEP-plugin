@@ -9,7 +9,7 @@ Preimiere Pro CEP plugin that add effects and utils using native premiere functi
 * Glow.
 
 ### Using automation:
-* FAST sound placment using Marker psoition in timeline.
+* FAST sound placment using Marker position in timeline.
 * Silence Cut - cuts out silnce below threshold(using FFmpeg).
 
 ## Built using:
