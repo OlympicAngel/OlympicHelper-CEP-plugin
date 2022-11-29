@@ -6,7 +6,7 @@ interface ExternalObjectConstructor {
   /**
    * Creates a new ExternalObject object.
    */
-  new (lib: string): ExternalObject
+  new(lib: string): ExternalObject
   (lib: string): ExternalObject
 }
 declare const ExternalObject: ExternalObjectConstructor
@@ -47,18 +47,7 @@ interface ExternalObject {
   terminate(): undefined
 }
 
-interface CSXSEventConstructor {
-  readonly prototype: CSXSEvent
-
-  /**
-   * Creates a new CSXSEvent object.
-   */
-  new (type?: string, scope?: string, data?: string): CSXSEvent
-  (type?: string, scope?: string, data?: string): CSXSEvent
-}
-declare const CSXSEvent: CSXSEventConstructor
-
-interface CSXSEvent {
+class CSXSEvent {
   /**
    * Retrieves the unique identifier of the application from which this event was dispatched.
    */

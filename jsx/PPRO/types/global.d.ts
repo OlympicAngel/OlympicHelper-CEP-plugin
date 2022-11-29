@@ -1,5 +1,3 @@
-/// <reference path="JavaScript.d.ts" />
-
 /**
  * The global BridgeTalk object.
  */
@@ -19,7 +17,7 @@ declare var NaN: number
  * The application object
  */
 declare var app: Application
-declare interface Application {}
+declare interface Application { }
 
 /**
  * Displays an alert box
@@ -38,13 +36,13 @@ declare function alert(message: string, title?: string, errorIcon?: boolean): vo
 declare function confirm(message: string, noAsDefault?: boolean, title?: string): boolean
 
 /**
- * Decodes a string created with encodeURI().
+ * Decodes a string created with encodeURI().
  * @param uri The text to decode.
  */
 declare function decodeURI(uri: string): string
 
 /**
- * Decodes a string created with encodeURIComponent().
+ * Decodes a string created with encodeURIComponent().
  * @param uri The text to decode.
  */
 declare function decodeURIComponent(uri: string): string
@@ -132,8 +130,8 @@ declare function prompt(prompt: string, default_?: string, title?: string): stri
 
 /**
  * Defines the default XML namespace.
- * This is a replacement function for the standard JavaScript statement set default xml namespace.
- * @param namespace The namespace to use. Omit this parameter to return to the empty namespace. This is either a Namespace object or a string.
+ * This is a replacement function for the standard JavaScript statement set default xml namespace.
+ * @param namespace The namespace to use. Omit this parameter to return to the empty namespace. This is either a Namespace object or a string.
  */
 declare function setDefaultXMLNamespace(namespace: Namespace): void
 

@@ -24,7 +24,7 @@ interface $ {
 
   /**
    * The most recent run-time error information.
-   * Assigning error text to this property generates a run-time error; however, the preferred way to generate a run-time error is to throw an Error object.
+   * Assigning error text to this property generates a run-time error; however, the preferred way to generate a run-time error is to throw an Error object.
    */
   error: Error
 
@@ -39,7 +39,7 @@ interface $ {
    * 0x0002 (2): Displays each line with its line number as it is executed.
    * 0x0040 (64): Enables excessive garbage collection. Usually, garbage collection starts when the number of objects has increased by a certain amount since the last garbage collection. This flag causes ExtendScript to garbage collect after almost every statement. This impairs performance severely, but is useful when you suspect that an object gets released too soon.
    * 0x0080 (128): Displays all calls with their arguments and the return value.
-   * 0x0100 (256): Enables extended error handling (see strict).
+   * 0x0100 (256): Enables extended error handling (see strict).
    * 0x0200 (512): Enables the localization feature of the toString method. Equivalent to the localize property.
    */
   flags: number
@@ -94,7 +94,7 @@ interface $ {
 
   /**
    * An array of objects containing information about the display screens attached to your computer.
-   * Each object has the properties left, top, right, bottom, which contain the four corners of each screen in global coordinates.A property primary is true if that object describes the primary display.
+   * Each object has the properties left, top, right, bottom, which contain the four corners of each screen in global coordinates.A property primary is true if that object describes the primary display.
    */
   readonly screens: object[]
 
@@ -190,7 +190,7 @@ interface ObjectConstructor {
    * Creates and returns a new object of a given type.
    * @param what The object type.
    */
-  new (what: any): Object
+  new(what: any): Object
   (): any
   (what: any): any
 
@@ -243,19 +243,19 @@ interface Object {
   propertyIsEnumerable(name: string): boolean
 
   /**
-   * Creates and returns a string representing this object, localized for the current locale. See toString().
+   * Creates and returns a string representing this object, localized for the current locale. See toString().
    */
   toLocaleString(): string
 
   /**
    * Creates and returns a string representation of this object.
-   * This function serializes the object, so that it can, for example, be passed between engines. Pass the returned string back to eval() to recreate the object. Works only with built-in classes.
+   * This function serializes the object, so that it can, for example, be passed between engines. Pass the returned string back to eval() to recreate the object. Works only with built-in classes.
    */
   toSource(): string
 
   /**
    * Creates and returns a string representing this object.
-   * Many objects (such as Date) override this method in favor of their own implementation. If an object has no string value and no user-defined toString() method, the default method returns [object type], where type is the object type or the name of the constructor function that created the object.
+   * Many objects (such as Date) override this method in favor of their own implementation. If an object has no string value and no user-defined toString() method, the default method returns [object type], where type is the object type or the name of the constructor function that created the object.
    */
   toString(): string
 
@@ -289,7 +289,7 @@ interface ArrayConstructor {
    * @param arrayLength If no other parameters are passed, the initial length of the empty array. Otherwise, the first element.
    * @param values If there is more than one parameter, the array is initialized with the given parameters.
    */
-  new (arrayLength?: number): any[]
+  new(arrayLength?: number): any[]
   new <T>(arrayLength: number): T[]
   new <T>(...values: T[]): T[]
   (arrayLength?: number): any[]
@@ -299,7 +299,7 @@ interface ArrayConstructor {
 declare const Array: ArrayConstructor
 
 /**
- * An array with integer indexing and a length property.
+ * An array with integer indexing and a length property.
  */
 interface Array<T> {
   [n: number]: T
@@ -376,7 +376,7 @@ interface Array<T> {
   toLocaleString(): string
 
   /**
-   * Creates a string representation of this object that can be fed back to eval() to re-create an object. Works only with built-in classes.
+   * Creates a string representation of this object that can be fed back to eval() to re-create an object. Works only with built-in classes.
    */
   toSource(): string
 
@@ -563,10 +563,10 @@ interface DateConstructor {
    * @param sec An Integer value from 0 to 59. If this argument is not supplied, its value is set to 0.
    * @param ms An integer value from 0 to 999. If this argument is not supplied, its value is set to 0.
    */
-  new (): Date
-  new (value: number): Date
-  new (value: string): Date
-  new (
+  new(): Date
+  new(value: number): Date
+  new(value: string): Date
+  new(
     year: number,
     month: number,
     day?: number,
@@ -842,7 +842,7 @@ interface Date {
   toLocaleTimeString(): string
 
   /**
-   * Creates a string representation of this object that can be fed back to eval() to re-create an object. Works only with built-in classes.
+   * Creates a string representation of this object that can be fed back to eval() to re-create an object. Works only with built-in classes.
    */
   toSource(): string
 
@@ -876,7 +876,7 @@ interface FunctionConstructor {
    * @param arguments The list of formal arguments, separated by commas. The formal arguments can also be supplied one by one; in this case, the last argument to the Function constructor is considered to be the function body.
    * @param body The body of the function to create.
    */
-  new (arguments: string, body: string): Function
+  new(arguments: string, body: string): Function
   (arguments: string, body: string): Function
 }
 declare const Function: FunctionConstructor
@@ -908,23 +908,23 @@ interface Function {
   readonly name: string
 
   /**
-   * Apply a this object and an argument list to a function.
-   * This function is different from call(); here, the arguments are suppliedas an Array object.
-   * @param thisObj The object to be used as this.
+   * Apply a this object and an argument list to a function.
+   * This function is different from call(); here, the arguments are suppliedas an Array object.
+   * @param thisObj The object to be used as this.
    * @param args An array of arguments.
    */
   apply(thisObj: object, args: any): any
 
   /**
-   * Apply a this object and arguments to a function.
-   * This function is different from apply(); here, the arguments are supplied one by one.
-   * @param thisObj The object to be used as this.
+   * Apply a this object and arguments to a function.
+   * This function is different from apply(); here, the arguments are supplied one by one.
+   * @param thisObj The object to be used as this.
    * @param arguments The first agument to the function. Add as many as needed.
    */
   call(thisObj: object, ...arguments: any[]): any
 
   /**
-   * Creates a string representation of this object that can be fed back to eval() to re-create an object. Works only with JavaScript functions.
+   * Creates a string representation of this object that can be fed back to eval() to re-create an object. Works only with JavaScript functions.
    */
   toSource(): string
 
@@ -941,7 +941,7 @@ interface StringConstructor {
    * Returns a string representation of the value given as an argument.
    * @param value A number, variable, or object to convert to a string.
    */
-  new (value?: any): String
+  new(value?: any): String
   (value: any): string
 
   /**
@@ -1145,7 +1145,7 @@ interface String {
   toLowerCase(): string
 
   /**
-   * Creates a string representation of this object that can be fed back to eval() to re-create an object. Works only with built-in classes.
+   * Creates a string representation of this object that can be fed back to eval() to re-create an object. Works only with built-in classes.
    */
   toSource(): string
 
@@ -1173,7 +1173,7 @@ interface NumberConstructor {
    * Returns a new Number object set to the value of the argument converted to a number.
    * @param value The value of the object being created.
    */
-  new (value?: any): Number
+  new(value?: any): Number
   (value: any): number
 
   /**
@@ -1231,7 +1231,7 @@ interface Number {
   toPrecision(decimals: number): string
 
   /**
-   * Creates a string representation of this object that can be fed back to eval() to re-create an object. Works only with built-in classes.
+   * Creates a string representation of this object that can be fed back to eval() to re-create an object. Works only with built-in classes.
    */
   toSource(): string
 
@@ -1254,7 +1254,7 @@ interface BooleanConstructor {
    * Creates and returns a new Boolean object set to the value of the argument converted to a boolean.
    * @param value The value to be converted to a Boolean.
    */
-  new (value?: any): Boolean
+  new(value?: any): Boolean
   (value: any): boolean
 }
 declare const Boolean: BooleanConstructor
@@ -1264,7 +1264,7 @@ declare const Boolean: BooleanConstructor
  */
 interface Boolean {
   /**
-   * Creates a string representation of this object that can be fed back to eval() to re-create an object. Works only with built-in classes.
+   * Creates a string representation of this object that can be fed back to eval() to re-create an object. Works only with built-in classes.
    */
   toSource(): string
 
@@ -1289,7 +1289,7 @@ interface RegExpConstructor {
    * @param pattern The pattern to convert.
    * @param flags Flags that control how the conversion is performed. A string containing any combination of the letters i, m, g: "i" -- ignore case in pattern matching "m" -- treat the string as multiple lines "g" -- do global pattern matching
    */
-  new (pattern: string | RegExp, flags?: string): RegExp
+  new(pattern: string | RegExp, flags?: string): RegExp
   (pattern: string | RegExp, flags?: string): RegExp
 
   /**
@@ -1427,7 +1427,7 @@ interface ErrorConstructor {
    * @param file The name of the file.
    * @param line The line number.
    */
-  new (msg: string, file?: string, line?: number): Error
+  new(msg: string, file?: string, line?: number): Error
   (msg: string, file?: string, line?: number): Error
 }
 declare const Error: ErrorConstructor
@@ -1442,7 +1442,7 @@ interface Error {
   description: string
 
   /**
-   * Creates a string representation of this object that can be fed back to eval() to re-create an object. Works only with built-in classes.
+   * Creates a string representation of this object that can be fed back to eval() to re-create an object. Works only with built-in classes.
    */
   toSource(): string
 
@@ -1459,7 +1459,7 @@ interface FileConstructor {
    * Creates and returns a new File object referring to a given file system location.
    * @param path The full or partial path name of the file,in platform-specific or URI format. The value stored in the object is the absolute path. The file that the path refers to does not need to exist.If the path refers to an existing folder: The File function returns a Folder object instead of a File object. The new operator returns a File object for a nonexisting file with the same name.
    */
-  new (path?: string): File
+  new(path?: string): File
   (path?: string): File
 
   /**
@@ -1470,7 +1470,7 @@ interface FileConstructor {
 
   /**
    * Decodes a UTF-8 encoded string as required by RFC 2396, and returns the decoded string.
-   * See also String.decodeURI().
+   * See also String.decodeURI().
    * @param uri The UTF-8 encoded string to decode.
    */
   decode(uri: string): string
@@ -1479,14 +1479,14 @@ interface FileConstructor {
    * Encodes a string as required by RFC 2396, and returns the encoded string.
    * All special characters are encoded in UTF-8 and stored as escaped characters starting with the percent sign followed by two hexadecimal digits. For example, the string "my file" is encoded as "my%20file".
    * Special characters are those with a numeric value greater than 127, except the following: / - _ . ! ~ * ' ( )
-   * See also encodeURI().
+   * See also encodeURI().
    * @param name The string to encode.
    */
   encode(name: string): string
 
   /**
    * Reports whether a given encoding is available.
-   * @param name The encoding name. Typical values are "ASCII", "binary", or "UTF-8".For a complete list of supported encodings, see the JavaScript Tools Guide.
+   * @param name The encoding name. Typical values are "ASCII", "binary", or "UTF-8".For a complete list of supported encodings, see the JavaScript Tools Guide.
    */
   isEncodingAvailable(name: string): boolean
 
@@ -1544,7 +1544,7 @@ interface File {
 
   /**
    * Gets or sets the encoding for subsequent read/write operations.
-   * One of the encoding constants listed in the JavaScript Tools Guide. If the value is not recognized, uses the system default encoding.A special encoder, BINARY, is used to read binary files. It stores each byte of the file as one Unicode character regardless of any encoding. When writing, the lower byte of each Unicode character is treated as a single byte to write.
+   * One of the encoding constants listed in the JavaScript Tools Guide. If the value is not recognized, uses the system default encoding.A special encoder, BINARY, is used to read binary files. It stores each byte of the file as one Unicode character regardless of any encoding. When writing, the lower byte of each Unicode character is treated as a single byte to write.
    */
   encoding: string
 
@@ -1743,7 +1743,7 @@ interface File {
   /**
    * Seeks to a given position in the file.
    * The new position cannot be less than 0 or greater than the current file size. Returns true if the position was changed.
-   * @param pos The new current position in the file as an offset in bytes from the start, current position, or end, depending on the mode.
+   * @param pos The new current position in the file as an offset in bytes from the start, current position, or end, depending on the mode.
    * @param mode The seek mode. One of: 0: Seek to absolute position, where pos=0 is the first byte of the file. This is the default. 1: Seek relative to the current position. 2. Seek backward from the end of the file.
    */
   seek(pos: number, mode?: number): boolean
@@ -1756,7 +1756,7 @@ interface File {
 
   /**
    * Creates and returns a serialized string representation of this object.
-   * Pass the resulting string to eval() to recreate the object.
+   * Pass the resulting string to eval() to recreate the object.
    */
   toSource(): string
 
@@ -1767,14 +1767,14 @@ interface File {
 
   /**
    * Writes the specified text to the file at the current position.
-   * You can supply multiple text values; the strings are concatenated to form a single string.For encoded files, writing a single Unicode character may write multiple bytes. Returns true if the write was successful.IMPORTANT: Be careful not to write to a file that is open in another application or object, as this can overwrite existing data.
+   * You can supply multiple text values; the strings are concatenated to form a single string.For encoded files, writing a single Unicode character may write multiple bytes. Returns true if the write was successful.IMPORTANT: Be careful not to write to a file that is open in another application or object, as this can overwrite existing data.
    * @param text A text string to be written.
    */
   write(text: string): boolean
 
   /**
    * Writes a string to the file at the current position and appends a line-feed sequence.
-   * You can supply multiple text values. The strings are concatenated into a single string, which is written in the file followed by one line-feed sequence, of the style specified by this object's linefeed property.For encoded files, writing a single Unicode character may write multiple bytes.Returns true if the write was successful.IMPORTANT: Be careful not to write to a file that is open in another application or object, as this can overwrite existing data.
+   * You can supply multiple text values. The strings are concatenated into a single string, which is written in the file followed by one line-feed sequence, of the style specified by this object's linefeed property.For encoded files, writing a single Unicode character may write multiple bytes.Returns true if the write was successful.IMPORTANT: Be careful not to write to a file that is open in another application or object, as this can overwrite existing data.
    * @param text A text string to be written.
    */
   writeln(text: string): boolean
@@ -1786,9 +1786,9 @@ interface FolderConstructor {
   /**
    * Creates and returns a new Folder object referring to a given file-system location.
    * If the path name refers to an already existing disk file, a File object is returned instead.Returns the new Folder object.
-   * @param path The absolute or relative path to the folder associated with this object, specified in URI format. The value stored in the object is the absolute path.The path need not refer to an existing folder. If the path refers to an existing file, rather than a folder: The Folder() function returns a File object instead of a Folder object. The new operator returns a Folder object for a nonexisting folder with the same name.
+   * @param path The absolute or relative path to the folder associated with this object, specified in URI format. The value stored in the object is the absolute path.The path need not refer to an existing folder. If the path refers to an existing file, rather than a folder: The Folder() function returns a File object instead of a Folder object. The new operator returns a Folder object for a nonexisting folder with the same name.
    */
-  new (path?: string): Folder
+  new(path?: string): Folder
   (path?: string): Folder
 
   /**
@@ -1868,7 +1868,7 @@ interface FolderConstructor {
 
   /**
    * Decodes a UTF-8 encoded string as required by RFC 2396, and returns the decoded string.
-   * See also String.decodeURI().
+   * See also String.decodeURI().
    * @param uri The UTF-8 string to decode.
    */
   decode(uri: string): string
@@ -1877,14 +1877,14 @@ interface FolderConstructor {
    * Encodes a string as required by RFC 2396, and returns the encoded string.
    * All special characters are encoded in UTF-8 and stored as escaped characters starting with the percent sign followed by two hexadecimal digits. For example, the string "my file" is encoded as "my%20file".
    * Special characters are those with a numeric value greater than 127, except the following: / - _ . ! ~ * ' ( )
-   * See also encodeURI().
+   * See also encodeURI().
    * @param name The string to encode.
    */
   encode(name: string): string
 
   /**
    * Reports whether a given encoding is available.
-   * @param name The encoding name. Typical values are "ASCII", "binary", or "UTF-8".For a complete list of supported encodings, see the JavaScript Tools Guide.
+   * @param name The encoding name. Typical values are "ASCII", "binary", or "UTF-8".For a complete list of supported encodings, see the JavaScript Tools Guide.
    */
   isEncodingAvailable(name: string): boolean
 
@@ -1976,7 +1976,7 @@ interface Folder {
   changePath(path: string): boolean
 
   /**
-   * Creates a folder at the location given by this object's path property.
+   * Creates a folder at the location given by this object's path property.
    * Returns true if the folder was created.
    */
   create(): boolean
@@ -1992,7 +1992,7 @@ interface Folder {
    * Returns an array of File and Folder objects, or null if this object's referenced folder does not exist.
    * @param mask A search mask for file names, specified as a string or a function. A mask string can contain question mark (?) and asterisk (*) wild cards. Default is "*", which matches all file names. Can also be the name of a function that takes a File or Folder object as its argument. It is called for each file or folder found in the search; if it returns true, the object is added to the return array. NOTE: In Windows, all aliases end with the extension .lnk. ExtendScript strips this from the file name when found, in order to preserve compatibility with other operating systems. You can search for all aliases by supplying the search mask "*.lnk", but note that such code is not portable.
    */
-  getFiles(mask?: any): Array<File | Folder>
+  getFiles(mask: any): Array<File | Folder>
 
   /**
    * Retrieves and returns the path for this file, relative to the specified base path, in URI notation.
@@ -2032,7 +2032,7 @@ interface Folder {
 
   /**
    * Creates and returns a serialized string representation of this object.
-   * Pass the resulting string to eval() to recreate the object.
+   * Pass the resulting string to eval() to recreate the object.
    */
   toSource(): string
 
@@ -2048,7 +2048,7 @@ interface SocketConstructor {
   /**
    * Creates a new Socket object.
    */
-  new (): Socket
+  new(): Socket
   (): Socket
 }
 declare const Socket: SocketConstructor
@@ -2286,7 +2286,7 @@ interface QNameConstructor {
    * @param uri The URI, specified as a Namespace object, an existing QName object, or string. If this is a Namespace object, the URI is set to the namespace URI, and there is no local name. If this is a QName object, the URI and localName is set to those of that object. If this is a string, the URI is set to that string.
    * @param name The local name. Used only if URI is given as a string.
    */
-  new (uri: any, name?: string): QName
+  new(uri: any, name?: string): QName
   (uri: any, name?: string): QName
 }
 declare const QName: QNameConstructor
@@ -2311,10 +2311,10 @@ interface NamespaceConstructor {
 
   /**
    * Creates a Namespace object.
-   * @param prefix The URIprefix, specified as an existing Namespace object, QName object, or string. If this is a Namespace or a QName object, the URI and prefix are set to that of the object. If this is a string, the prefix is set to that string, and the URI must be specified.
+   * @param prefix The URIprefix, specified as an existing Namespace object, QName object, or string. If this is a Namespace or a QName object, the URI and prefix are set to that of the object. If this is a string, the prefix is set to that string, and the URI must be specified.
    * @param uri The URI if the prefix is specified as a string.
    */
-  new (prefix: any, uri?: string): Namespace
+  new(prefix: any, uri?: string): Namespace
   (prefix: any, uri?: string): Namespace
 }
 declare const Namespace: NamespaceConstructor
@@ -2341,7 +2341,7 @@ interface XMLConstructor {
    * Parses an XML string. Throws an error if the XML is incorrect.
    * @param text The text to parse.
    */
-  new (text: string): XML
+  new(text: string): XML
   (text: string): XML
 
   /**
@@ -2618,7 +2618,7 @@ interface XML {
  * An XML list object.
  * In this implementation, an XMLList object is synonymous to the XML object. The constructor accepts an XML list, but everything else works like theXML object.
  */
-interface XMLList {}
+interface XMLList { }
 declare const XMLList: XMLList
 
 interface UnitValueConstructor {
@@ -2627,7 +2627,7 @@ interface UnitValueConstructor {
   /**
    * Creates a new UnitValue object.
    */
-  new (value: string | UnitValue): UnitValue
+  new(value: string | UnitValue): UnitValue
   (value: string | UnitValue): UnitValue
 
   /**

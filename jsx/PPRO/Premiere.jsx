@@ -25,7 +25,7 @@ $._PPP_ = {
 
 
     //#region helper functions
-
+    autoCut_started: false,
     CutAt: function (at) {
         try {
             if (at.start_at >= at.end_at)
@@ -40,12 +40,22 @@ $._PPP_ = {
                 return new Error("no cut needed");
 
 
+            if (!this.autoCut_started) {
+                this.autoCut_started = true;
+                if (!this.AutoCutBin)  //create bin once
+                    this.AutoCutBin = this.VerifyBin("OlympicHelper SilenceCuts")
+            }
+
+            /** @type {TrackItem} */
             var clip = clip_n_track.clip;
+            /** @type {Track}*/
+            var track = clip_n_track.track;
+            var isNOT_lastCut = at.end_at < clip.outPoint.seconds;
 
             if (at.start_at != 0) { // if zero - no left side
 
                 //#region creating the left side of the cut
-                var cut_start_time = new Time(0);
+                var cut_start_time = new Time();
                 cut_start_time.seconds = at.start_at;
 
                 var pre_cut_clip = clip.projectItem.createSubClip(clip.name + "_cutAt_" + at.start_at,
@@ -55,16 +65,16 @@ $._PPP_ = {
                     1, 1 //take video & audio
                 );
 
-                if (!this.AutoCutBin)  //create bin once
-                    this.AutoCutBin = this.VerifyBin("OlympicHelper SilenceCuts")
                 pre_cut_clip.moveBin(this.AutoCutBin);
                 //#endregion
-                clip_n_track.track.overwriteClip(pre_cut_clip, clip.start) //insert before cut
+                /** @type {Track}*/
+                track.overwriteClip(pre_cut_clip, clip.start) //insert before cut
             }
 
-            if (at.end_at < clip.outPoint.seconds) { // if above end time - no right side
+            if (isNOT_lastCut) { // if above end time - no right side
 
                 //#region re-create the rest of the clip (right side)
+                /** @type {ProjectItem} */
                 var clip_rest = clip.projectItem;
                 var newClipStartAt = new Time();
                 newClipStartAt.seconds = at.end_at;
@@ -73,20 +83,29 @@ $._PPP_ = {
                 var after_cut_start = new Time();
                 after_cut_start.seconds = clip.start.seconds + (at.start_at - clip.inPoint.seconds) //update rest of the clip timeline location
                 //#endregion
-                clip_n_track.track.overwriteClip(clip_rest, after_cut_start)//overwrite old clip
-
-                //remove left overs
-                this.AutoCut_getLAstClip(clip_n_track).remove(true, true)
-                clip.remove(true, true);
-                for (var i = 0; i < clip_n_track.audio.length; i++) {
-                    var audioClip = clip_n_track.audio[i]
-                    audioClip.remove(true, true);
-                }
+                track.overwriteClip(clip_rest, after_cut_start)//overwrite old clip
             }
 
+
+
+            //remove left overs
+            /** @type {TrackItem} */
+            var leftover_clip = this.AutoCut_getLAstClip(clip_n_track)
+            var clip_audio = leftover_clip.getLinkedItems();
+            if (!clip_audio)
+                clip_audio = {};
+
+            var index = 0;
+            while (clip_audio.numItems > 1) {
+                if (clip_audio[index].mediaType != "Video")
+                    clip_audio[index].remove(true, false);
+                else
+                    index++;
+            }
+            leftover_clip.remove(true, false);
+
             var lastClip = this.AutoCut_getLAstClip(clip_n_track)
-            if (lastClip)
-                lastClip.setSelected(true, false);
+            lastClip.setSelected(true, false);
 
             return "end";
         }
@@ -118,8 +137,7 @@ $._PPP_ = {
                         clip: cClip,
                         track: currentSeq.videoTracks[videoTrackIndex],
                         trackNum: videoTrackIndex,
-                        clipPos: clipPos,
-                        audio: this.getAudioOfClip(cClip, clipPos)
+                        clipPos: clipPos
                     }
                 }
             }
@@ -129,31 +147,14 @@ $._PPP_ = {
 
     AutoCut_end: function () {
         try {
+            this.autoCut_started = false;
+
             var lastClipData = this.getSelectedClip_n_Track();
             var lastClip = lastClipData.clip;
             if (!lastClip)
                 return "noClip";
 
-            var lastClipIndex = lastClipData.clipPos;
-            var currentSeq = app.project.activeSequence;
-            var removeCount = 0;
-            for (var i = 0; i < currentSeq.audioTracks.numTracks; i++) {
-
-                var track = currentSeq.audioTracks[i];
-                var clipCount = track.clips.numItems;
-                for (var x = clipCount - 1; x > lastClipIndex; x--) {
-                    var cClip = track.clips[x];
-                    if (cClip) {
-                        cClip.remove(true, true)
-                        removeCount++;
-                    }
-
-                }
-            }
-
             lastClip.projectItem.clearInPoint() //reset origin in/out
-
-            return removeCount
         }
         catch (e) {
             delete e.source
@@ -178,22 +179,6 @@ $._PPP_ = {
             return ToString(e, 2)
         }
 
-    },
-
-    getAudioOfClip: function (clip, clipIndex) {
-        var currentSeq = app.project.activeSequence;
-        var audio_arr = [];
-        var numTracks = currentSeq.audioTracks.numTracks;
-        for (var audioTrackIndex = 0; audioTrackIndex < numTracks; audioTrackIndex++) {
-            var cAudioTrack = currentSeq.audioTracks[audioTrackIndex];
-
-            var cClip = cAudioTrack.clips[clipIndex];
-            if (cClip && cClip.projectItem.nodeId == clip.projectItem.nodeId) {
-                audio_arr.push(cClip)
-            }
-
-        }
-        return audio_arr;
     },
 
     AddEffect: function (effctName, track, position, times, fromSeq) {
@@ -1348,7 +1333,7 @@ function ToString(str, count) {
     var output = "";
     var addtive = 6;
     if (count === undefined || count === null)
-        var count = addtive - 1;
+        count = addtive - 1;
     var spacing = "";
     for (var z = 0; z < count; z++)
         spacing = spacing + " ";
@@ -1426,6 +1411,7 @@ function perlin() {
     this.seed = function () {
         this.gradients = {};
     };
+    this.gradients = {};
     this.get = function (x, y) {
         var xf = Math.floor(x);
         var yf = Math.floor(y);

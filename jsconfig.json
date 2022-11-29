@@ -1,8 +1,9 @@
 {
-    "compilerOptions": {
-      "module": "none",
-      "target": "ES5",
-      "noLib": false,
-      "checkJs": true
-    }
+  "compilerOptions": {
+    "noLib": true,
+    "checkJs": true
+  },
+  "include": [
+    "**/*"
+  ]
 }
