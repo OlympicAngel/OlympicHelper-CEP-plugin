@@ -105,7 +105,8 @@ $._PPP_ = {
             leftover_clip.remove(true, false);
 
             var lastClip = this.AutoCut_getLAstClip(clip_n_track)
-            lastClip.setSelected(true, false);
+            if (lastClip)
+                lastClip.setSelected(true, false);
 
             return "end";
         }
@@ -178,7 +179,6 @@ $._PPP_ = {
             delete e.source
             return ToString(e, 2)
         }
-
     },
 
     AddEffect: function (effctName, track, position, times, fromSeq) {
