@@ -204,7 +204,7 @@
 	</div>
 
 
-	<div id="autoCut" onmouseover="SilenceCut_getAudioTracks()">
+	<div id="autoCut" onclick="SilenceCut_getAudioTracks()">
 		<table tabindex="0">
 			<tr>
 				<td>
@@ -243,7 +243,26 @@
 						<label class="EN">Define as "Silence" when duration is longer then</label>
 						<label class="HE">הגדר כ"שקט" כאשר האורך גדול מ</label>:
 						<input class="normal" id="s_c_duration" type="number" step="50" min="100" max="10000"
-							value="300" />ms
+							value="400" />ms<br>
+						<small class="EN">Bigger = less cuts - more continues.</small>
+						<small class="HE">ערכים גדולים יותר = פחות קאטים - סרטון יותר המשכי.</small>
+					</center>
+				</td>
+			</tr>
+		</table>
+		<table tabindex="0">
+			<tr>
+				<td>
+					<label class="EN">Safe Zones:</label><label class="HE">איזורים בטוחים</label>
+				</td>
+				<td>
+					<center>
+						<label class="EN">Add safe area before & after cut of</label>
+						<label class="HE">הוסף איזור בטוח לפני ואחרי הקאט של</label>:
+						<input class="normal" id="s_c_margin" type="number" step="10" min="0" max="1000"
+							value="20" />ms<br>
+						<small class="EN">Bigger = more time before & after cuts.</small>
+						<small class="HE">ערכים גדולים יותר = יותר זמן לפני ואחרי הקאטים.</small>
 					</center>
 				</td>
 			</tr>
