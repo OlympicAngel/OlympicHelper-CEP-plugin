@@ -216,7 +216,7 @@ scrolelr {
 
 div.title {
 	background-image: url(../css/tinyme.png);
-	position: fixed;
+	position: absolute;
 	background-repeat: no-repeat;
 	background-size: contain;
 	height: 41px;
