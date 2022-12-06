@@ -193,10 +193,15 @@ $._PPP_ = {
             if (fromSeq)
                 app.project.openSequence(openedSeqID);
 
-            var videoTrack = seq.getVideoTrackAt(track);
+            var videoTrack
+            if (effctName == "Pitch Shifter")
+                videoTrack = seq.getAudioTrackAt(track);
+            else
+                videoTrack = seq.getVideoTrackAt(track);
+
+
             var CountClips = 0;
             var clipToAdd;
-
 
             for (var i = 0; i < videoTrack.numItems; i++) {
 
@@ -211,14 +216,45 @@ $._PPP_ = {
                 return "could not find clip at position";
 
 
-            var fx = qe.project.getVideoEffectByName(effctName);
+            var getFx, addFx;
+            if (effctName == "Pitch Shifter") {
+                getFx = qe.project.getAudioEffectByName;
+                addFx = clipToAdd.addAudioEffect;
+            }
+            else {
+                getFx = qe.project.getVideoEffectByName;
+                addFx = clipToAdd.addVideoEffect;
+            }
+
+
+            var fx;
+            if (effctName == "Pitch Shifter")
+                fx = qe.project.getAudioEffectByName(effctName);
+            else
+                fx = qe.project.getVideoEffectByName(effctName);
+
+            if (effctName == "Pitch Shifter") {
+                getFx = qe.project.getAudioEffectByName;
+                addFx = clipToAdd.addAudioEffect;
+            }
+            else {
+                getFx = qe.project.getVideoEffectByName;
+                addFx = clipToAdd.addVideoEffect;
+            }
+
             if (times == null || times == undefined)
                 times = 1;
-            for (var x = 0; x < times; x++)
-                clipToAdd.addVideoEffect(fx, false);
+            for (var x = 0; x < times; x++) {
+                if (effctName == "Pitch Shifter")
+                    clipToAdd.addAudioEffect(fx, false);
+                else
+                    clipToAdd.addVideoEffect(fx, false);
+            }
+
 
         } catch (err) {
-            throw err;
+            delete err.source
+            throw ToString(err, 2)
         }
     },
     scanProjectAudio: function () {
@@ -263,13 +299,19 @@ $._PPP_ = {
         return re;
     },
     rndRange: function (x) { return 0.5 - x + Math.random() * (2 * x); },
-    GetAllSelectedClipsV: function () {
+    GetAllSelectedClipsV: function (useAudio) {
         var seq = this.global.currentSeq;
 
         var clipArray = [];
 
-        for (var s = 0; s < seq.videoTracks.numTracks; s++) {
-            var firstVideoTrack = seq.videoTracks[s];
+        var tracks;
+        if (useAudio == true)
+            tracks = seq.audioTracks;
+        else
+            tracks = seq.videoTracks;
+
+        for (var s = 0; s < tracks.numTracks; s++) {
+            var firstVideoTrack = tracks[s];
 
             for (var i = 0; i < firstVideoTrack.clips.numItems; i++) {
                 var firstClip = firstVideoTrack.clips[i]
@@ -430,6 +472,9 @@ $._PPP_ = {
                 if (customFX == "glow" && Split == 50.0001)
                     return true;
                 break;
+
+            case "Pitch Shifter":
+                return true;
             default:
                 return false;
         }
@@ -534,22 +579,28 @@ $._PPP_ = {
             tFX = Clip.components[s];
             if (tFX.displayName == fxName)
                 if (this.IsCustomFX(tFX, customFX)) {
+
                     return tFX;
                 }
         }
 
-        try { this.AddEffect(fxName, Clip.trackNum, Clip.clipNum, undefined, seq); }
-        catch (err) { this.Alert(true, true, "somesting went wrong locating/creating [" + fxName + "]FX at " + ToString(Clip)) };
-        var pos = 2;
-        if (Clip.components[2].displayName == "Vector Motion")
-            pos = 3;
+        try {
+            this.AddEffect(fxName, Clip.trackNum, Clip.clipNum, undefined, seq);
+        }
+        catch (err) {
+            this.Alert(true, true, "somesting went wrong locating/creating [" + fxName + "]FX at " + ToString(err))
+        };
 
+        fxCount = Clip.components.numItems;
+        for (var s = 0; s < fxCount; s++) {
+            tFX = Clip.components[s];
+            if (tFX.displayName == fxName) {
+                this.SetCustomFX(tFX, customFX);
+                return tFX;
+            }
+        }
 
-        tFX = Clip.components[pos];
-
-        this.SetCustomFX(tFX, customFX);
-
-        return tFX;
+        throw "fail to locate added effect.."
     },
     ResetKeyframes: function (EffectAttr, allowKeyframes) {
         if (EffectAttr.areKeyframesSupported()) {
@@ -881,11 +932,11 @@ $._PPP_ = {
 
     //#region effects
 
-    BaseApplyFX: function (callback) {
+    BaseApplyFX: function (callback, useAudio) {
         this.GetClipFrameTime();
-        var slectedClips = this.GetAllSelectedClipsV();
+        var slectedClips = this.GetAllSelectedClipsV(useAudio);
         if (slectedClips.length == 0)
-            return new Error("noClip");
+            return new Error((useAudio == true && "useAudio") || "noClip");
 
         for (var i = 0; i < slectedClips.length; i++) {
             this.clipCount = i + "/" + slectedClips.length;
@@ -1088,6 +1139,36 @@ $._PPP_ = {
             return x;
         });
     },
+
+
+    RandomPitcher: function (base, rndRange) {
+        try {
+            this.BaseApplyFX(function (slectedClip) {
+                /**
+                 * @type {Effect}
+                */
+                try {
+
+
+                    var pitchFx = this.GetEffectFromClip(slectedClip, "Pitch Shifter", "rndPitch");
+                    /**@type {Component} */
+                    var pitch_prop = pitchFx.properties[1];
+                    var newPitch = 1 / 3 + base[0] / 100 * 2 / 3 + (rndRange[0] / 100) * (2 / 3 - Math.random());
+
+                    pitch_prop.setValue(newPitch, true);
+                }
+                catch (e) {
+                    delete e.source
+                    throw ToString(e, 2)
+                }
+            }, true);
+        }
+        catch (e) {
+            delete e.source
+            return ToString(e, 2)
+        }
+    },
+
     //#endregion
 
 
