@@ -85,7 +85,8 @@ body>button:nth-of-type(2) {
 
 }
 
-#FX_SoundFX::before {
+#FX_SoundFX::before,
+#FX_rndPitch::before {
     box-shadow: inset -48vw 0 31vw -24vw rgba(180, 255, 150, 0.72);
 
 }
@@ -99,6 +100,7 @@ body>button:nth-of-type(2) {
     box-shadow: inset -48vw 0 31vw -24vw rgba(255, 70, 70, 0.883);
 
 }
+
 
 .fxUI[closed="false"]::before {
     background-color: rgba(92, 176, 255, 0.32);

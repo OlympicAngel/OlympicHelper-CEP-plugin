@@ -38,7 +38,6 @@
 		gtag('config', 'G-LF4QFVX23H');
 	</script>
 
-
 	<script>
 
 		if (!window.location.hash) {
@@ -137,7 +136,11 @@
 	</a>
 	<button onclick="tooglelang();"><label class="HE">English?</label><label class="EN">עברית?</label></button>
 
+
 	<button onclick="toggleView();" class="viewToggle">👁️</button>
+	<button class="normal" onclick="window.location.reload();" style="position: absolute; left: 5em;">
+		<label class="HE">רענן</label><label class="EN">Refresh</label>
+	</button>
 
 	<div id="markerHTML">
 
@@ -214,7 +217,9 @@
 					<center>
 						<label class="EN">Select audio track to analyze audio from</label>
 						<label class="HE">בחר פס קול שממנו יפוענך האדיו</label>:
-						<input class="normal" id="s_c_track" type="number" step="1" min="1" max="1" value="1" />
+						<select class="normal" id="s_c_track">
+							<option value="a">Select Track</option>
+						</select>
 					</center>
 				</td>
 			</tr>
@@ -294,8 +299,7 @@
 	</div>
 
 	<script src="./lib/EffectUI.js" charset="utf-8"></script>
-	<button class="normal" onclick="window.location.reload();"><label class="HE">רענן</label><label
-			class="EN">Refresh</label></ד>
+
 
 </body>
 

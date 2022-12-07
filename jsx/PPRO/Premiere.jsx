@@ -181,6 +181,20 @@ $._PPP_ = {
         }
     },
 
+    getSelectedClipInOut: function () {
+        try {
+            var track_n_clip = this.getSelectedClip_n_Track();
+            /** @type {TrackItem} */
+            var clip = track_n_clip.clip;
+            if (!clip)
+                return new Error("noClip")
+            return '{"in":xx,"out":yy}'.replace("xx", clip.inPoint.seconds).replace("yy", clip.outPoint.seconds)
+        } catch (e) {
+            delete e.source
+            return ToString(e, 2)
+        }
+    },
+
     AddEffect: function (effctName, track, position, times, fromSeq) {
         try {
             var openedSeqID = app.project.activeSequence.sequenceID;
