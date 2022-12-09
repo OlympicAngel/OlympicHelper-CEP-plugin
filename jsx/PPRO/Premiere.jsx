@@ -26,6 +26,8 @@ $._PPP_ = {
 
     //#region helper functions
     autoCut_started: false,
+    autoCut_currentClip: null,
+    autoCut_currentClip_io: null,
     CutAt: function (at) {
         try {
             if (at.start_at >= at.end_at)
@@ -33,94 +35,85 @@ $._PPP_ = {
 
             var clip_n_track = this.getSelectedClip_n_Track(true);
 
-            if (!clip_n_track.clip)
-                return new Error("noClip");
-
-            if (clip_n_track.clip.inPoint.seconds >= at.end_at) //if cut is before clip's in
-                return new Error("no cut needed");
-
-
-            if (!this.autoCut_started) {
-                this.autoCut_started = true;
-                if (!this.AutoCutBin)  //create bin once
-                    this.AutoCutBin = this.VerifyBin("OlympicHelper SilenceCuts")
-            }
-
             /** @type {TrackItem} */
             var clip = clip_n_track.clip;
             /** @type {Track}*/
             var track = clip_n_track.track;
-            var isNOT_lastCut = at.end_at < clip.outPoint.seconds;
+            /** @type {Number}*/
+            var clip_index = clip_n_track.clipPos
 
-            if (at.start_at != 0) { // if zero - no left side
+            if (!clip)
+                return new Error("noClip");
 
-                //#region creating the left side of the cut
-                var cut_start_time = new Time();
-                cut_start_time.seconds = at.start_at;
+            if (clip.inPoint.seconds > at.end_at || clip.outPoint < at.start_at) //if cut range in outside of clip in/out
+                return new Error("no cut needed");
 
-                var pre_cut_clip = clip.projectItem.createSubClip(clip.name + "_cutAt_" + at.start_at,
-                    clip.inPoint, //start time
-                    cut_start_time, //end time,
-                    0, //allows in/out user-edit
-                    1, 1 //take video & audio
-                );
+            //splits the clip upto 2 times if succeed for each cut returns true 
+            var firstCut = this.split(clip, track, at.start_at),
+                secondCut = this.split(clip, track, at.end_at);
 
-                pre_cut_clip.moveBin(this.AutoCutBin);
-                //#endregion
-                /** @type {Track}*/
-                track.overwriteClip(pre_cut_clip, clip.start) //insert before cut
+            //select the part after the cut part - so the program could keep running
+            if (secondCut) {//if its not 2 split its the end of the clip
+                //deSelect current clip(s)
+                var currentSelected = app.project.activeSequence.getSelection();
+                for (var i = 0; i < currentSelected.numItems; i++)
+                    currentSelected[i].setSelected(false, true)
+
+
+                var after_cut_clip = track.clips[clip_index + 2]; // 1 is the removable clip - 2 in the next inline clip
+                if (after_cut_clip)
+                    after_cut_clip.setSelected(true, true)
             }
 
-            if (isNOT_lastCut) { // if above end time - no right side
-
-                //#region re-create the rest of the clip (right side)
-                /** @type {ProjectItem} */
-                var clip_rest = clip.projectItem;
-                var newClipStartAt = new Time();
-                newClipStartAt.seconds = at.end_at;
-                clip_rest.setInPoint(newClipStartAt, 4)
-
-                var after_cut_start = new Time();
-                after_cut_start.seconds = clip.start.seconds + (at.start_at - clip.inPoint.seconds) //update rest of the clip timeline location
-                //#endregion
-                track.overwriteClip(clip_rest, after_cut_start)//overwrite old clip
+            // calc the new index clip of the removable cut.
+            var removable_clip_index = clip_index + (firstCut || secondCut); //if it did make a cut the removable will be the next index in track
+            if (secondCut && !firstCut) {// if did a cut at the end but not at start - e.g. when clip starts with a silence cut
+                removable_clip_index = clip_index; //set the clip to remove the current(first clip)
             }
 
-
-
-            //remove left overs
-            /** @type {TrackItem} */
-            var leftover_clip = this.AutoCut_getLAstClip(clip_n_track)
-            var clip_audio = leftover_clip.getLinkedItems();
-            if (!clip_audio)
-                clip_audio = {};
-
+            var removable_clip = track.clips[removable_clip_index];
+            //gets all linked audio/video for removable clip
+            var removable_clip_audio = removable_clip.getLinkedItems();
             var index = 0;
-            while (clip_audio.numItems > 1) {
-                if (clip_audio[index].mediaType != "Video")
-                    clip_audio[index].remove(true, false);
+            while (removable_clip_audio.numItems > 1) { //while there is MORE then 1 linked item (eg. video & audio)
+                if (removable_clip_audio[index].mediaType != "Video") //Delete anything that is not the video as its disassemble the link
+                    removable_clip_audio[index].remove(true, false);
                 else
                     index++;
             }
-            leftover_clip.remove(true, false);
+            removable_clip.remove(true, false); // delete the video at last
 
-            var lastClip = this.AutoCut_getLAstClip(clip_n_track)
-            if (lastClip)
-                lastClip.setSelected(true, false);
+            $.gc();
 
-            return "end";
-        }
-        catch (e) {
+            return "GOOD";
+        } catch (e) {
             delete e.source
             return ToString(e, 2)
         }
     },
 
-    AutoCut_getLAstClip: function (clip_n_track) {
-        var video_track = app.project.activeSequence.videoTracks;
-        var clips_arr = video_track[clip_n_track.trackNum].clips;
-        var lastClip = clips_arr[clips_arr.numItems - 1];
-        return lastClip;
+    /**
+     * splits a clip at a point
+     * @param {TrackItem} clip 
+     * @param {Track} track 
+     * @param {Number} at 
+     * @return {Boolean} whatever it did split or not
+    */
+    split: function (clip, track, at) {
+        if (at < clip.inPoint || at > clip.outPoint) //if at position is outside of clip i/o there is no need in split
+            return false;
+
+        var clip_origin = clip.projectItem;
+
+        //sets the new in part for the new TrackItem that will be generated
+        var new_in_time = new Time().seconds = at;
+        clip_origin.setInPoint(new_in_time, 4);
+
+        //create cut
+        var insert_time = new Time().seconds = at - clip.inPoint.seconds + clip.start.seconds;
+        track.overwriteClip(clip_origin, insert_time)
+
+        return true;
     },
 
     getSelectedClip_n_Track: function () {
@@ -146,16 +139,43 @@ $._PPP_ = {
         return {};
     },
 
+    AutoCut_start: function () {
+        var clip_n_track = this.getSelectedClip_n_Track();
+        /** @type {TrackItem} */
+        var clip = clip_n_track.clip;
+        /** @type {Track}*/
+        var track = clip_n_track.track;
+        /** @type {Number}*/
+        var clip_index = clip_n_track.clipPos
+
+        //removing audio lines to prevent duplicates of audio tracks => prevents ripple delete
+        var clip_links = clip.getLinkedItems();
+        var index = 0;
+        while (clip_links.numItems > 1) { //while there is MORE then 1 linked item (eg. video & audio)
+            if (clip_links[index].mediaType != "Video") //Delete anything that is not the video as its disassemble the link
+                clip_links[index].remove(true, false);
+            else
+                index++;
+        }
+
+        var clip_origin = clip.projectItem;
+        clip_origin.setColorLabel(2)
+        this.autoCut_currentClip = clip_origin;
+        this.autoCut_currentClip_io = { inP: clip_origin.getInPoint(), outP: clip_origin.getOutPoint() }//get for later restoration
+        clip_origin.setInPoint(clip.inPoint, 4);
+        clip_origin.setOutPoint(clip.outPoint, 4);
+        track.overwriteClip(clip_origin, clip.start); //replaces the clip but now the audio will be at the correct audio track(s)
+        track.clips[clip_index].setSelected(true, true);
+    },
+
     AutoCut_end: function () {
         try {
             this.autoCut_started = false;
-
-            var lastClipData = this.getSelectedClip_n_Track();
-            var lastClip = lastClipData.clip;
-            if (!lastClip)
-                return "noClip";
-
-            lastClip.projectItem.clearInPoint() //reset origin in/out
+            this.autoCut_currentClip.setInPoint(this.autoCut_currentClip_io.inP, 4);
+            this.autoCut_currentClip.setOutPoint(this.autoCut_currentClip_io.outP, 4);
+            this.autoCut_currentClip.setColorLabel(1)
+            this.autoCut_currentClip = null;
+            this.autoCut_currentClip = null;
         }
         catch (e) {
             delete e.source
