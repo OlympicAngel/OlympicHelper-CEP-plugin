@@ -28,18 +28,66 @@ $._PPP_ = {
     autoCut_started: false,
     autoCut_currentClip: null,
     autoCut_currentClip_io: null,
-    CutAt: function (at) {
+
+    /**
+     * 
+     * @param {[{start_at: Number,end_at: Number}]} cutArr 
+     */
+    SilenceCut: function (cutArr) {
+        try {
+            var eventObj = new CSXSEvent();
+            eventObj.type = "SilenceCut";
+            function UpdatePanel(cutMade) {
+                if (cutMade == undefined)
+                    cutMade = ""
+                eventObj.data = cutMade.toString();
+                eventObj.dispatch();
+            }
+
+            //get the first clip selected from the left
+            /** @type {{clip: TrackItem,track: Track,clipPos: Number, trackNum: Number}} */
+            var clip_n_track = this.getSelectedClip_n_Track(true);
+
+            for (var i = 0; i < cutArr.length; i++) {
+                var current_cut = cutArr[i];
+
+
+                /** @type {{ state: String, nextClip_index: Number} || String} */
+                var cut_res = this.CutAt(current_cut, clip_n_track)
+
+
+                UpdatePanel(cut_res.state || cut_res); //output state or error if any
+
+                //update track 
+                clip_n_track.track = app.project.activeSequence.videoTracks[clip_n_track.trackNum]
+
+                //update next item
+                clip_n_track.clipPos = cut_res.nextClip_index;
+                clip_n_track.clip = clip_n_track.track.clips[clip_n_track.clipPos]
+
+                //clear memory after each 10 cuts
+                if (i % 10 == 0)
+                    $.gc();
+            }
+        } catch (e) {
+            delete e.source
+            return ToString(e, 2)
+        }
+    },
+
+    /**
+     * 
+     * @param {{start_at: Number,end_at: Number}} at 
+     * @param {{clip: TrackItem,track: Track,clip_index: Number}} clip_n_track
+     */
+    CutAt: function (at, clip_n_track) {
         try {
             if (at.start_at >= at.end_at)
                 return new Error("wrong timing")
 
-            var clip_n_track = this.getSelectedClip_n_Track(true);
-
-            /** @type {TrackItem} */
+            //get args for easer r/w
             var clip = clip_n_track.clip;
-            /** @type {Track}*/
             var track = clip_n_track.track;
-            /** @type {Number}*/
             var clip_index = clip_n_track.clipPos
 
             if (!clip)
@@ -52,18 +100,6 @@ $._PPP_ = {
             var firstCut = this.split(clip, track, at.start_at),
                 secondCut = this.split(clip, track, at.end_at);
 
-            //select the part after the cut part - so the program could keep running
-            if (secondCut) {//if its not 2 split its the end of the clip
-                //deSelect current clip(s)
-                var currentSelected = app.project.activeSequence.getSelection();
-                for (var i = 0; i < currentSelected.numItems; i++)
-                    currentSelected[i].setSelected(false, true)
-
-
-                var after_cut_clip = track.clips[clip_index + 2]; // 1 is the removable clip - 2 in the next inline clip
-                if (after_cut_clip)
-                    after_cut_clip.setSelected(true, true)
-            }
 
             // calc the new index clip of the removable cut.
             var removable_clip_index = clip_index + (firstCut || secondCut); //if it did make a cut the removable will be the next index in track
@@ -77,15 +113,13 @@ $._PPP_ = {
             var index = 0;
             while (removable_clip_audio.numItems > 1) { //while there is MORE then 1 linked item (eg. video & audio)
                 if (removable_clip_audio[index].mediaType != "Video") //Delete anything that is not the video as its disassemble the link
-                    removable_clip_audio[index].remove(true, false);
+                    removable_clip_audio[index].remove(false, false);
                 else
                     index++;
             }
             removable_clip.remove(true, false); // delete the video at last
 
-            $.gc();
-
-            return "GOOD";
+            return { state: "GOOD", nextClip_index: removable_clip_index };
         } catch (e) {
             delete e.source
             return ToString(e, 2)
@@ -153,7 +187,7 @@ $._PPP_ = {
         var index = 0;
         while (clip_links.numItems > 1) { //while there is MORE then 1 linked item (eg. video & audio)
             if (clip_links[index].mediaType != "Video") //Delete anything that is not the video as its disassemble the link
-                clip_links[index].remove(true, false);
+                clip_links[index].remove(false, false);
             else
                 index++;
         }
@@ -173,7 +207,6 @@ $._PPP_ = {
             this.autoCut_started = false;
             this.autoCut_currentClip.setInPoint(this.autoCut_currentClip_io.inP, 4);
             this.autoCut_currentClip.setOutPoint(this.autoCut_currentClip_io.outP, 4);
-            this.autoCut_currentClip.setColorLabel(1)
             this.autoCut_currentClip = null;
             this.autoCut_currentClip = null;
         }
@@ -998,7 +1031,10 @@ $._PPP_ = {
 
             var t = new Time();
             var endWhenK = clipLength + clipTimeStart + this.global.frameTime;
+
+
             for (var k = clipTimeStart; k < endWhenK; k = k + this.global.frameTime) {
+
                 var framesFromClipStart = (k - clipTimeStart) / this.global.frameTime;
                 t.seconds = k;
                 position.addKey(t);
