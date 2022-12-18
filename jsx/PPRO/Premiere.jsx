@@ -28,6 +28,7 @@ $._PPP_ = {
     autoCut_started: false,
     autoCut_currentClip: null,
     autoCut_currentClip_io: null,
+    autoCut_progress: null,
 
     /**
      * 
@@ -35,6 +36,7 @@ $._PPP_ = {
      */
     SilenceCut: function (cutArr) {
         try {
+            this.autoCut_progress = true;
             var eventObj = new CSXSEvent();
             eventObj.type = "SilenceCut";
             function UpdatePanel(cutMade) {
@@ -48,7 +50,13 @@ $._PPP_ = {
             /** @type {{clip: TrackItem,track: Track,clipPos: Number, trackNum: Number}} */
             var clip_n_track = this.getSelectedClip_n_Track(true);
 
-            for (var i = 0; i < cutArr.length; i++) {
+            /** @type {Sequence} */
+            var seq = app.project.activeSequence;
+            var old_name = seq.name + "";
+            var silenceCut_name = "unfocus = stop SilenceCut";
+            seq.name = silenceCut_name + "";
+
+            for (var i = 0; i < cutArr.length && this.autoCut_progress; i++) {
                 var current_cut = cutArr[i];
 
 
@@ -68,7 +76,22 @@ $._PPP_ = {
                 //clear memory after each 10 cuts
                 if (i % 10 == 0)
                     $.gc();
+
+                if (i % 3) {
+                    var activeSeq = app.project.activeSequence;
+                    if (!activeSeq || activeSeq.name != silenceCut_name) {
+                        this.autoCut_progress = false
+                    }
+
+                }
             }
+
+            if (!this.autoCut_progress) //if ended from outside - finish nicely
+                this.AutoCut_end()
+
+            this.autoCut_progress = false;
+
+            seq.name = old_name;
         } catch (e) {
             delete e.source
             return ToString(e, 2)
@@ -1000,19 +1023,38 @@ $._PPP_ = {
     //#region effects
 
     BaseApplyFX: function (callback, useAudio) {
+        var event_clip_done = new CSXSEvent();
+        event_clip_done.type = "fx_clip_done";
+
+        var event_fx_progress = new CSXSEvent();
+        event_fx_progress.type = "fx_progress";
+        var ignore_update_counter;
+        function UpdateProgress(current_time, total_time, clipTimeStart) {
+            ignore_update_counter++
+            //if not each 6 cycles(usally frames) ignore
+            if (ignore_update_counter % 6 != 0)
+                return
+            event_fx_progress.data = Math.floor((current_time - clipTimeStart) / (total_time - clipTimeStart) * 100);
+            event_fx_progress.dispatch();
+        }
+
         this.GetClipFrameTime();
         var slectedClips = this.GetAllSelectedClipsV(useAudio);
         if (slectedClips.length == 0)
             return new Error((useAudio == true && "useAudio") || "noClip");
 
         for (var i = 0; i < slectedClips.length; i++) {
-            this.clipCount = i + "/" + slectedClips.length;
-            callback.call(this, slectedClips[i]);
+            event_clip_done.data = (i + 1) + "/" + slectedClips.length;
+            event_clip_done.dispatch();
+
+            ignore_update_counter = 0;
+            callback.call(this, slectedClips[i], UpdateProgress);
         }
     },
 
     CameraMovement: function (multi, rate, horizental, vertical, rotationVal, isAuto, shutter) {
-        return this.BaseApplyFX(function (slectedClip) {
+        return this.BaseApplyFX(function (slectedClip, UpdateProgress) {
+            /** @type {ComponentCollection } */
             var tansformFX = this.GetEffectFromClip(slectedClip, "Transform", "cameraMovement");
             var clipTimeStart = slectedClip.inPoint.seconds;
             var clipLength = slectedClip.duration.seconds;
@@ -1030,10 +1072,11 @@ $._PPP_ = {
             this.ResetKeyframes(rotation, true);
 
             var t = new Time();
-            var endWhenK = clipLength + clipTimeStart + this.global.frameTime;
+            var endWhenK = clipLength + clipTimeStart + this.global.frameTime * 2;
 
 
-            for (var k = clipTimeStart; k < endWhenK; k = k + this.global.frameTime) {
+            for (var k = clipTimeStart; k < endWhenK; k = k + this.global.frameTime * 2) {
+                UpdateProgress(k, endWhenK, clipTimeStart)
 
                 var framesFromClipStart = (k - clipTimeStart) / this.global.frameTime;
                 t.seconds = k;
@@ -1068,7 +1111,6 @@ $._PPP_ = {
                 }
                 position.setValueAtKey(t, [newPositionX, newPositionY], k >= clipLength + clipTimeStart);
                 rotation.setValueAtKey(t, rotationValue, k >= clipLength + clipTimeStart);
-
             }
             this.global.wiggleX = undefined;
             this.global.wiggleY = undefined;
@@ -1076,7 +1118,7 @@ $._PPP_ = {
     },
 
     BaseShake: function (multi, rate, horizental, vertical, isAuto, shutter) {
-        return this.BaseApplyFX(function (slectedClip) {
+        return this.BaseApplyFX(function (slectedClip, UpdateProgress) {
 
             var tansformFX = this.GetEffectFromClip(slectedClip, "Transform", "baseShake");
             var clipTimeStart = slectedClip.inPoint.seconds;
@@ -1092,7 +1134,11 @@ $._PPP_ = {
             var position = properties[1];
             this.ResetKeyframes(position, true);
             var t = new Time();
-            for (var k = clipTimeStart; k < clipLength + clipTimeStart + this.global.frameTime * rate["0"]; k = k + this.global.frameTime * rate["0"]) {
+            var endWhenK = clipLength + clipTimeStart + this.global.frameTime * rate["0"];
+            for (var k = clipTimeStart; k < endWhenK; k = k + this.global.frameTime * rate["0"]) {
+                UpdateProgress(k, endWhenK, clipTimeStart)
+
+
                 var timefromClipStart = (k - clipTimeStart) / this.global.frameTime;
                 t.seconds = k;
                 position.addKey(t);
@@ -1121,7 +1167,7 @@ $._PPP_ = {
     },
 
     ZoomBlur: function (ScaleAmount, blurLength, AutoCenter) {
-        return this.BaseApplyFX(function (slectedClip) {
+        return this.BaseApplyFX(function (slectedClip, UpdateProgress) {
 
             var tansformFX = this.GetEffectFromClip(slectedClip, "Transform", "ZoomBlur");
             var clipTimeStart = slectedClip.inPoint.seconds;
@@ -1148,7 +1194,11 @@ $._PPP_ = {
 
             var t = new Time();
             var x = 0;
-            for (var k = clipTimeStart; k <= clipLength + clipTimeStart + this.global.frameTime; k = k + this.global.frameTime) {
+            var endWhenK = clipLength + clipTimeStart + this.global.frameTime
+            for (var k = clipTimeStart; k <= endWhenK; k = k + this.global.frameTime) {
+                UpdateProgress(k, endWhenK, clipTimeStart)
+
+
                 x++;
                 var timefromClipStart = Math.round((k - clipTimeStart) / this.global.frameTime);
                 t.seconds = k;
@@ -1166,7 +1216,7 @@ $._PPP_ = {
     },
 
     SpinBlur: function (SpinAmount, blurLength, AutoCenter) {
-        return this.BaseApplyFX(function (slectedClip) {
+        return this.BaseApplyFX(function (slectedClip, UpdateProgress) {
 
             var tansformFX = this.GetEffectFromClip(slectedClip, "Transform", "SpinBlur");
             var clipTimeStart = slectedClip.inPoint.seconds;
@@ -1193,7 +1243,11 @@ $._PPP_ = {
 
             var t = new Time();
             var x = 0;
-            for (var k = clipTimeStart; k <= clipLength + clipTimeStart + this.global.frameTime; k = k + this.global.frameTime) {
+            var endWhenK = clipLength + clipTimeStart + this.global.frameTime
+            for (var k = clipTimeStart; k <= endWhenK; k = k + this.global.frameTime) {
+                UpdateProgress(k, endWhenK, clipTimeStart)
+
+
                 x++;
                 var timefromClipStart = Math.round((k - clipTimeStart) / this.global.frameTime);
                 t.seconds = k;
@@ -1218,8 +1272,6 @@ $._PPP_ = {
                  * @type {Effect}
                 */
                 try {
-
-
                     var pitchFx = this.GetEffectFromClip(slectedClip, "Pitch Shifter", "rndPitch");
                     /**@type {Component} */
                     var pitch_prop = pitchFx.properties[1];
