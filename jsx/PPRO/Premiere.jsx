@@ -16,8 +16,8 @@ function isInFormatAudio(str) {
 }
 
 if (!CSXSEvent) {
-    var CSXSEvent = function () {
-        return { dispatch: function () { } }
+    function CSXSEvent() {
+        this.dispatch = function () { }
     }
 }
 
