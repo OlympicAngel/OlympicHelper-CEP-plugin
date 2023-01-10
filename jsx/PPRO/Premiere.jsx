@@ -15,6 +15,11 @@ function isInFormatAudio(str) {
     return false;
 }
 
+if (!CSXSEvent) {
+    var CSXSEvent = function () {
+        return { dispatch: function () { } }
+    }
+}
 
 $._PPP_ = {
     AddFXDataTrack: null,
