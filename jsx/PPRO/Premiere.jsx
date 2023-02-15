@@ -16,6 +16,8 @@ function isInFormatAudio(str) {
 }
 
 if (!CSXSEvent) {
+    var externalObjectName = "PlugPlugExternalObject"; var mylib = new ExternalObject("lib:" + externalObjectName);
+
     function CSXSEvent() {
         this.dispatch = function () { }
     }
