@@ -16,11 +16,13 @@ function isInFormatAudio(str) {
 }
 
 if (!CSXSEvent) {
-    var externalObjectName = "PlugPlugExternalObject"; var mylib = new ExternalObject("lib:" + externalObjectName);
+    var externalObjectName = "PlugPlugExternalObject";
+    var mylib = new ExternalObject("lib:" + externalObjectName);
 
-    function CSXSEvent() {
-        this.dispatch = function () { }
-    }
+    if (!CSXSEvent)
+        function CSXSEvent() {
+            this.dispatch = function () { }
+        }
 }
 
 $._PPP_ = {
