@@ -1,3 +1,6 @@
+var externalObjectName = "PlugPlugExternalObject";
+var mylib = new ExternalObject("lib:" + externalObjectName);
+
 //#include "PPro_API_Constants.jsx";
 //#include "JSON.jsx";
 //app.setSDKEventMessage(JSON.stringify(currentSeq.getPlayerPosition()));
@@ -13,16 +16,6 @@ function isInFormatAudio(str) {
         }
     }
     return false;
-}
-
-if (!CSXSEvent) {
-    var externalObjectName = "PlugPlugExternalObject";
-    var mylib = new ExternalObject("lib:" + externalObjectName);
-
-    if (!CSXSEvent)
-        function CSXSEvent() {
-            this.dispatch = function () { }
-        }
 }
 
 $._PPP_ = {
