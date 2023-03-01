@@ -4,7 +4,7 @@
 <head>
 
 	<title>
-		OlympicHelper FX1
+		OlympicHelper
 	</title>
 
 
@@ -279,6 +279,23 @@
 			</tr>
 		</table>
 		<table tabindex="0"></table>
+		<div style="top:-1em; position: relative;">
+			<label class="EN">Left click on preset to load it, right click to set current settings as preset.</label>
+			<label class="HE">מקש שמאלי על פריסט כדי לטעון אותה, מקש ימני כדי לקבוע את ההגדרות כרגע כפריסט.</label>
+		</div>
+		<saveAs preset="1" oncontextmenu="SavePreset({ id: 'silenceCut', items: {} },1)"
+			onclick="SilenceCutLoadPreset(1)">Preset 1
+		</saveAs>
+		<saveAs preset="2" oncontextmenu="SavePreset({ id: 'silenceCut', items: {} },2)"
+			onclick="SilenceCutLoadPreset(2)">
+			Preset 2
+		</saveAs>
+		<saveAs preset="3" oncontextmenu="SavePreset({ id: 'silenceCut', items: {} },3)"
+			onclick="SilenceCutLoadPreset(3)">
+			Preset 3
+		</saveAs>
+
+
 		<button onclick="SilenceCut()">Cut Silence</button>
 		<label class="EN" style="font-size: 1.2em;color:red">NOTICE! this operation will make a lots of edits!! - there
 			is no undo(s)! (thats sucks I know..)<br>
