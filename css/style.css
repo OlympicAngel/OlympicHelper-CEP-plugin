@@ -351,3 +351,15 @@ au {
 	position: absolute;
 	left: 0;
 }
+
+saveAs {
+	border: solid 0.1em;
+	position: absolute;
+	display: inline-block;
+	border-radius: 0.5em;
+	padding: 0 0.2em
+}
+
+saveAs:hover {
+	color: rgb(0, 144, 228)
+}
