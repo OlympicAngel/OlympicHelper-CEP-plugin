@@ -324,6 +324,7 @@ input::after {
     padding: 0.2em 1em;
     border: 0.12em solid #131313;
     outline: none;
+    margin-top: 1.8em;
 }
 
 keyframe {
