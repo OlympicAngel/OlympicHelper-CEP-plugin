@@ -221,6 +221,10 @@ input+label {
     flex-direction: row-reverse
 }
 
+input {
+    letter-spacing: 0.01em;
+}
+
 input+label {
     direction: ltr;
     text-align: left;
