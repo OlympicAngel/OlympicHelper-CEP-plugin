@@ -48,15 +48,20 @@ $._PPP_ = {
                 eventObj.dispatch();
             }
 
-            //get the first clip selected from the left
+            //get the first clip selected from the right
             /** @type {{clip: TrackItem,track: Track,clipPos: Number, trackNum: Number}} */
             var clip_n_track = this.getSelectedClip_n_Track(true);
 
-            /** @type {Sequence} */
-            var seq = app.project.activeSequence;
-            var old_name = seq.name + "";
+
+
             var silenceCut_name = "unfocus = stop SilenceCut";
-            seq.name = silenceCut_name + "";
+
+            //create new seq to hide real one prevent mass update of GUI, making it MUCH faster
+            app.project.createNewSequenceFromClips(silenceCut_name, app.project.rootItem.children[0], app.project.rootItem);
+            /**@type {Sequence} */
+            var tempSeq = app.project.activeSequence;
+            tempSeq.audioTracks[0].clips[0].remove(false, false);
+
 
             for (var i = 0; i < cutArr.length && this.autoCut_progress; i++) {
                 var current_cut = cutArr[i];
@@ -68,9 +73,6 @@ $._PPP_ = {
 
                 UpdatePanel(cut_res.state || cut_res); //output state or error if any
 
-                //update track 
-                clip_n_track.track = app.project.activeSequence.videoTracks[clip_n_track.trackNum]
-
                 //update next item
                 clip_n_track.clipPos = cut_res.nextClip_index;
                 clip_n_track.clip = clip_n_track.track.clips[clip_n_track.clipPos]
@@ -79,7 +81,7 @@ $._PPP_ = {
                 if (i % 10 == 0)
                     $.gc();
 
-                if (i % 3) {
+                if (i % 4) {
                     var activeSeq = app.project.activeSequence;
                     if (!activeSeq || activeSeq.name != silenceCut_name) {
                         this.autoCut_progress = false
@@ -88,12 +90,9 @@ $._PPP_ = {
                 }
             }
 
-            if (!this.autoCut_progress) //if ended from outside - finish nicely
-                this.AutoCut_end()
-
+            app.project.deleteSequence(tempSeq)
             this.autoCut_progress = false;
 
-            seq.name = old_name;
         } catch (e) {
             delete e.source
             return ToString(e, 2)
@@ -111,20 +110,28 @@ $._PPP_ = {
                 return new Error("wrong timing")
 
             //get args for easer r/w
+            /** @type {TrackItem} */
             var clip = clip_n_track.clip;
             var track = clip_n_track.track;
             var clip_index = clip_n_track.clipPos
 
+
+
             if (!clip)
                 return new Error("noClip");
 
-            if (clip.inPoint.seconds > at.end_at || clip.outPoint < at.start_at) //if cut range in outside of clip in/out
-                return new Error("no cut needed");
+            if (clip.inPoint.seconds > at.end_at || clip.outPoint.seconds < at.start_at) {//if cut range in outside of clip in/out
+                const resObj = new Error("no cut needed");
+                resObj.nextClip_index = clip_index + 1;
+                return resObj;
+            }
 
             //splits the clip upto 2 times if succeed for each cut returns true 
-            var firstCut = this.split(clip, track, at.start_at),
-                secondCut = this.split(clip, track, at.end_at);
 
+            var clipIO = { "in": clip.inPoint.seconds, out: clip.outPoint.seconds }
+
+            var firstCut = this.split(clip, track, at.start_at, clipIO);
+            var secondCut = this.split(clip, track, at.end_at, clipIO);
 
             // calc the new index clip of the removable cut.
             var removable_clip_index = clip_index + (firstCut || secondCut); //if it did make a cut the removable will be the next index in track
@@ -133,7 +140,7 @@ $._PPP_ = {
             }
 
             var removable_clip = track.clips[removable_clip_index];
-            //gets all linked audio/video for removable clip
+            //gets all linked audio / video for removable clip
             var removable_clip_audio = removable_clip.getLinkedItems();
             var index = 0;
             while (removable_clip_audio.numItems > 1) { //while there is MORE then 1 linked item (eg. video & audio)
@@ -158,10 +165,11 @@ $._PPP_ = {
      * @param {Number} at 
      * @return {Boolean} whatever it did split or not
     */
-    split: function (clip, track, at) {
-        if (at < clip.inPoint || at > clip.outPoint) //if at position is outside of clip i/o there is no need in split
+    split: function (clip, track, at, clipIO) {
+        if (at <= clipIO.in || at >= clipIO.out) //if at position is outside of clip i/o there is no need in split
             return false;
 
+        /**@type{ProjectItem} */
         var clip_origin = clip.projectItem;
 
         //sets the new in part for the new TrackItem that will be generated
@@ -169,7 +177,8 @@ $._PPP_ = {
         clip_origin.setInPoint(new_in_time, 4);
 
         //create cut
-        var insert_time = new Time().seconds = at - clip.inPoint.seconds + clip.start.seconds;
+        var insert_time = new Time().seconds = at - clipIO.in + clip.start.seconds;
+
         track.overwriteClip(clip_origin, insert_time)
 
         return true;
@@ -221,19 +230,22 @@ $._PPP_ = {
         clip_origin.setColorLabel(2)
         this.autoCut_currentClip = clip_origin;
         this.autoCut_currentClip_io = { inP: clip_origin.getInPoint(), outP: clip_origin.getOutPoint() }//get for later restoration
+
         clip_origin.setInPoint(clip.inPoint, 4);
         clip_origin.setOutPoint(clip.outPoint, 4);
-        track.overwriteClip(clip_origin, clip.start); //replaces the clip but now the audio will be at the correct audio track(s)
+        var start = clip.start;
+        clip.remove(false, false)
+        track.overwriteClip(clip_origin, start); //replaces the clip but now the audio will be at the correct audio track(s)
         track.clips[clip_index].setSelected(true, true);
     },
 
     AutoCut_end: function () {
         try {
             this.autoCut_started = false;
-            this.autoCut_currentClip.setInPoint(this.autoCut_currentClip_io.inP, 4);
-            this.autoCut_currentClip.setOutPoint(this.autoCut_currentClip_io.outP, 4);
+            this.autoCut_currentClip.clearOutPoint()
+            this.autoCut_currentClip.clearInPoint()
             this.autoCut_currentClip = null;
-            this.autoCut_currentClip = null;
+            this.autoCut_currentClip_io = null;
         }
         catch (e) {
             delete e.source
