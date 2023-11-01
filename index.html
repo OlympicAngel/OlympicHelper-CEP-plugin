@@ -272,17 +272,11 @@
 						<label class="EN">Add safe area before & after cut of</label>
 						<label class="HE">הוסף איזור בטוח לפני ואחרי הקאט של</label>:
 						<input class="normal" id="s_c_margin" type="number" step="10" min="0" max="1000" value="20"
-							required onblur="(async ()=>{
+							ini="false" required onblur="(async ()=>{
 								const frameTimeMS = await evalScript(`$._PPP_.GetClipFrameTime()`) * 1000;
-								s_c_margin.value = Math.round(s_c_margin.value/frameTimeMS)* ~~(frameTimeMS)
+								s_c_margin.value = Math.round(s_c_margin.value/frameTimeMS)* ~~(frameTimeMS);
+								s_c_margin.step = ~~frameTimeMS;
 							})()" />ms<br>
-						<script>
-								(async () => {
-									const frameTimeMS = await evalScript(`$._PPP_.GetClipFrameTime()`) * 1000;
-									s_c_margin.value = ~~frameTimeMS;
-									s_c_margin.step = ~~frameTimeMS;
-								})()
-						</script>
 						<small class="EN">Bigger = more time before & after cuts.</small>
 						<small class="HE">ערכים גדולים יותר = יותר זמן לפני ואחרי הקאטים.</small>
 					</center>
