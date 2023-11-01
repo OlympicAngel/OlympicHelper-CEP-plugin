@@ -60,7 +60,17 @@ $._PPP_ = {
             app.project.createNewSequenceFromClips(silenceCut_name, app.project.rootItem.children[0], app.project.rootItem);
             /**@type {Sequence} */
             var tempSeq = app.project.activeSequence;
-            tempSeq.audioTracks[0].clips[0].remove(false, false);
+            //tempSeq.audioTracks[0].clips[0].remove(false, false);
+
+            var clip_links = tempSeq.videoTracks[0].clips[0].getLinkedItems();
+            var index = 0;
+            while (clip_links.numItems > 1) { //while there is MORE then 1 linked item (eg. video & audio)
+                if (clip_links[index].mediaType != "Video") //Delete anything that is not the video as its disassemble the link
+                    clip_links[index].remove(false, false);
+                else
+                    index++;
+            }
+
 
 
             for (var i = 0; i < cutArr.length && this.autoCut_progress; i++) {
