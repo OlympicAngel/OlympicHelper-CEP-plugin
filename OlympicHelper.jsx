@@ -11,19 +11,19 @@
 * then your use, modification, or distribution of it requires the prior
 * written permission of Adobe. 
 **************************************************************************/
-if(typeof($)=='undefined'){
-	$={};
+if (typeof ($) == 'undefined') {
+	$ = {};
 }
 
 $._ext = {
 	//Evaluate a file and catch the exception.
-	evalFile : function(path) {
+	evalFile: function (path) {
 		try {
 			$.evalFile(path);
-		} catch (e) {alert("Exception:" + e);}
+		} catch (e) { alert("Exception:" + e); }
 	},
 	// Evaluate all the files in the given folder 
-	evalFiles: function(jsxFolderPath) {
+	evalFiles: function (jsxFolderPath) {
 		var folder = new Folder(jsxFolderPath);
 		if (folder.exists) {
 			var jsxFiles = folder.getFiles("*.jsx");
@@ -34,7 +34,7 @@ $._ext = {
 		}
 	},
 	// entry-point function to call scripts more easily & reliably
-	callScript: function(dataStr) {
+	callScript: function (dataStr) {
 		try {
 			var dataObj = JSON.parse(decodeURIComponent(dataStr));
 			if (
@@ -64,3 +64,9 @@ $._ext = {
 		}
 	}
 };
+
+app.enableQE();
+var tempSeq = app.project.activeSequence;
+var fx = tempSeq.videoTracks[0].clips[0].components[0].properties[2];
+var test = fx
+fx.test

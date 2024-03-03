@@ -5,6 +5,12 @@ var mylib = new ExternalObject("lib:" + externalObjectName);
 //#include "JSON.jsx";
 //app.setSDKEventMessage(JSON.stringify(currentSeq.getPlayerPosition()));
 
+function debug(data) {
+    var eventDebug = new CSXSEvent();
+    eventDebug.type = "debug";
+    eventDebug.data = data;
+    eventDebug.dispatch();
+}
 
 var allowedAudio = ["mp3", "wav", "sgg", "aac", "3gp", "AIF", "M4A", "OMF"];
 
@@ -64,7 +70,7 @@ $._PPP_ = {
 
             var clip_links = tempSeq.videoTracks[0].clips[0].getLinkedItems();
             var index = 0;
-            while (clip_links.numItems > 1) { //while there is MORE then 1 linked item (eg. video & audio)
+            while (!!clip_links && clip_links.numItems > 1) { //while there is MORE then 1 linked item (eg. video & audio)
                 if (clip_links[index].mediaType != "Video") //Delete anything that is not the video as its disassemble the link
                     clip_links[index].remove(false, false);
                 else
@@ -138,7 +144,7 @@ $._PPP_ = {
 
             //splits the clip upto 2 times if succeed for each cut returns true 
 
-            var clipIO = { "in": clip.inPoint.seconds, out: clip.outPoint.seconds }
+            var clipIO = { "in": clip.inPoint.seconds, "out": clip.outPoint.seconds }
 
             var firstCut = this.split(clip, track, at.start_at, clipIO);
             var secondCut = this.split(clip, track, at.end_at, clipIO);
@@ -176,7 +182,11 @@ $._PPP_ = {
      * @return {Boolean} whatever it did split or not
     */
     split: function (clip, track, at, clipIO) {
-        if (at <= clipIO.in || at >= clipIO.out) //if at position is outside of clip i/o there is no need in split
+        if (!this.global.frameTime)
+            this.global.frameTime = 8
+        //adding calc of half a frame to prevent micro seconds error
+        if (at - this.global.frameTime / 2 <= clipIO.in ||
+            at + this.global.frameTime / 2 >= clipIO.out) //if at position is outside of clip i/o there is no need in split
             return false;
 
         /**@type{ProjectItem} */
