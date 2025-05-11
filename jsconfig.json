@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "checkJs": true,
+        "allowJs": true,
+        "baseUrl": ".",
+        "paths": {
+            "*": [
+                "types/*"
+            ]
+        }
+    },
+    "include": [
+        "**/*.jsx",
+        "types"
+    ]
+}

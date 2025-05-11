@@ -1,3 +1,9 @@
+/// <reference path="./types/ExtendScript.d.ts" />
+/// <reference path="./types/PremierePro.11.1.2.d.ts" />
+/// <reference path="./types/PlugPlugExternalObject.ts" />
+
+
+
 var externalObjectName = "PlugPlugExternalObject";
 var mylib = new ExternalObject("lib:" + externalObjectName);
 
@@ -5,12 +11,6 @@ var mylib = new ExternalObject("lib:" + externalObjectName);
 //#include "JSON.jsx";
 //app.setSDKEventMessage(JSON.stringify(currentSeq.getPlayerPosition()));
 
-function debug(data) {
-    var eventDebug = new CSXSEvent();
-    eventDebug.type = "debug";
-    eventDebug.data = data;
-    eventDebug.dispatch();
-}
 
 var allowedAudio = ["mp3", "wav", "sgg", "aac", "3gp", "AIF", "M4A", "OMF"];
 
@@ -24,6 +24,13 @@ function isInFormatAudio(str) {
     return false;
 }
 
+function debug(data) {
+    var eventDebug = new CSXSEvent();
+    eventDebug.type = "debug";
+    eventDebug.data = data;
+    eventDebug.dispatch();
+}
+
 $._PPP_ = {
     AddFXDataTrack: null,
     AddFXDataPosit: null,
@@ -33,130 +40,94 @@ $._PPP_ = {
 
 
     //#region helper functions
-    autoCut_started: false,
-    autoCut_currentClip: null,
-    autoCut_currentClip_io: null,
-    autoCut_progress: null,
+    SilenceCut_started: false, //indicate if the autoCut is running
+    /** @type {{ clip: TrackItem; track: Track; trackNum: number; clipPos: number; }} */
+    SilenceCut_clip_n_track: null, //the current clip that is being cut
+    SilenceCut_progress: null, //indicate autoCut counter
+    SilenceCut_transcodeOnIngestState: null, //indicate if the autoCut is running
 
-    /**
-     * 
-     * @param {[{start_at: Number,end_at: Number}]} cutArr 
-     */
-    SilenceCut: function (cutArr) {
+    /** gets called by the fontend before actualy logic, stores data about the silence cut clip, and some visual staff */
+    SilenceCut_start: function () {
         try {
-            this.autoCut_progress = true;
-            var eventObj = new CSXSEvent();
-            eventObj.type = "SilenceCut";
-            function UpdatePanel(cutMade) {
-                if (cutMade == undefined)
-                    cutMade = ""
-                eventObj.data = cutMade.toString();
-                eventObj.dispatch();
-            }
-
-            //get the first clip selected from the right
-            /** @type {{clip: TrackItem,track: Track,clipPos: Number, trackNum: Number}} */
-            var clip_n_track = this.getSelectedClip_n_Track(true);
-
-
-
-            var silenceCut_name = "unfocus = stop SilenceCut";
-
-            //create new seq to hide real one prevent mass update of GUI, making it MUCH faster
-            app.project.createNewSequenceFromClips(silenceCut_name, app.project.rootItem.children[0], app.project.rootItem);
-            /**@type {Sequence} */
-            var tempSeq = app.project.activeSequence;
-            //tempSeq.audioTracks[0].clips[0].remove(false, false);
-
-            var clip_links = tempSeq.videoTracks[0].clips[0].getLinkedItems();
-            var index = 0;
-            while (!!clip_links && clip_links.numItems > 1) { //while there is MORE then 1 linked item (eg. video & audio)
-                if (clip_links[index].mediaType != "Video") //Delete anything that is not the video as its disassemble the link
-                    clip_links[index].remove(false, false);
-                else
-                    index++;
-            }
-
-
-
-            for (var i = 0; i < cutArr.length && this.autoCut_progress; i++) {
-                var current_cut = cutArr[i];
-
-
-                /** @type {{ state: String, nextClip_index: Number} || String} */
-                var cut_res = this.CutAt(current_cut, clip_n_track)
-
-
-                UpdatePanel(cut_res.state || cut_res); //output state or error if any
-
-                //update next item
-                clip_n_track.clipPos = cut_res.nextClip_index;
-                clip_n_track.clip = clip_n_track.track.clips[clip_n_track.clipPos]
-
-                //clear memory after each 10 cuts
-                if (i % 10 == 0)
-                    $.gc();
-
-                if (i % 4) {
-                    var activeSeq = app.project.activeSequence;
-                    if (!activeSeq || activeSeq.name != silenceCut_name) {
-                        this.autoCut_progress = false
-                    }
-
-                }
-            }
-
-            app.project.deleteSequence(tempSeq)
-            this.autoCut_progress = false;
+            // Fetch selected clip and its containing track
+            var clip_n_track = this.getSelectedClip_n_Track();
+            if (!clip_n_track.clip) throw new Error("No selected clip");
+            this.SilenceCut_clip_n_track = clip_n_track;
+            var selectedClip = clip_n_track.clip;
+            this.SilenceCut_transcodeOnIngestState = selectedClip.projectItem.hasProxy()
+            app.setEnableTranscodeOnIngest(false); //disable auto proxy generation
 
         } catch (e) {
-            delete e.source
-            return ToString(e, 2)
+            return ToString(e, 2);
         }
     },
 
+    SilenceCut_getMeta: function () {
+        var clip_n_track = this.SilenceCut_clip_n_track && this.SilenceCut_clip_n_track || this.getSelectedClip_n_Track();
+        var selectedClip = clip_n_track.clip;
+        const size = getClipDimensions(selectedClip)
+        var w = size[0],
+            h = size[1];
+        var mediaPath = selectedClip.projectItem.getMediaPath();
+        var seq = app.project.activeSequence;
+        var TICKS_PER_SECOND = 254016000000.0;
+        var timebase = seq ? TICKS_PER_SECOND / Number(seq.timebase) : 30;
+        var inPoint = selectedClip.inPoint.seconds;
+
+        var options = {
+            timebase: timebase,
+            width: w,
+            height: h,
+            sampleRate: 48000,
+            numAudioTracks: 4,
+            totalDuration: selectedClip.duration.seconds,
+            mediaPath: mediaPath,
+            inPoint: inPoint
+        }
+        return JSON.stringify(options);
+    },
+
     /**
-     * 
-     * @param {{start_at: Number,end_at: Number}} at 
-     * @param {{clip: TrackItem,track: Track,clip_index: Number}} clip_n_track
-     */
-    CutAt: function (at, clip_n_track) {
+   * main logic of the silence cut, gets an array and preforms all the cuts
+   * @param {string} xmlPath 
+   */
+    SilenceCut: function (xmlPath) {
         try {
-            if (at.start_at >= at.end_at)
-                return new Error("wrong timing")
+            //save proxy state so we can rollback to it
+            this.SilenceCut_progress = true;
 
-            //get args for easer r/w
-            /** @type {TrackItem} */
-            var clip = clip_n_track.clip;
-            var track = clip_n_track.track;
-            var clip_index = clip_n_track.clipPos
+            // Gather clip data
+            var clip_n_track = this.SilenceCut_clip_n_track
+            if (!clip_n_track.clip) throw new Error("No selected clip");
+            var selectedClip = clip_n_track.clip;
 
+            // Import the XML
+            var xmlFileName = "SilenceCut";
+            var olympicHelperDir = this.VerifyBin("OlympicHelper Files"); //TODO: make sure import is correct
+            app.project.importFiles([xmlPath], true, olympicHelperDir);
+            var items = olympicHelperDir.children;
+            /** @type {ProjectItem | null} */
+            var importedItem = null;
 
-
-            if (!clip)
-                return new Error("noClip");
-
-            if (clip.inPoint.seconds > at.end_at || clip.outPoint.seconds < at.start_at) {//if cut range in outside of clip in/out
-                const resObj = new Error("no cut needed");
-                resObj.nextClip_index = clip_index + 1;
-                return resObj;
+            // Find the imported sequence
+            for (var j = 0; j < items.numItems; j++) {
+                if (items[j].isSequence() && items[j].name === xmlFileName) {
+                    importedItem = items[j];
+                    break;
+                }
             }
+            if (!importedItem) throw new Error("Failed to import XML");
 
-            //splits the clip upto 2 times if succeed for each cut returns true 
+            var importedSeq = this.GetSeq(importedItem)
+            const newName = "SilenceCut - double click me"
+            importedSeq.name = newName;
 
-            var clipIO = { "in": clip.inPoint.seconds, "out": clip.outPoint.seconds }
+            var clipItem = importedSeq.videoTracks[0].clips[0].projectItem;
+            //attach proxy prevent rerneder proxy
+            clipItem.attachProxy(selectedClip.projectItem.getProxyPath(), 0)
 
-            var firstCut = this.split(clip, track, at.start_at, clipIO);
-            var secondCut = this.split(clip, track, at.end_at, clipIO);
-
-            // calc the new index clip of the removable cut.
-            var removable_clip_index = clip_index + (firstCut || secondCut); //if it did make a cut the removable will be the next index in track
-            if (secondCut && !firstCut) {// if did a cut at the end but not at start - e.g. when clip starts with a silence cut
-                removable_clip_index = clip_index; //set the clip to remove the current(first clip)
-            }
-
-            var removable_clip = track.clips[removable_clip_index];
-            //gets all linked audio / video for removable clip
+            //remove ol selected clip
+            var removable_clip = selectedClip;
             var removable_clip_audio = removable_clip.getLinkedItems();
             var index = 0;
             while (removable_clip_audio.numItems > 1) { //while there is MORE then 1 linked item (eg. video & audio)
@@ -165,45 +136,48 @@ $._PPP_ = {
                 else
                     index++;
             }
-            removable_clip.remove(true, false); // delete the video at last
 
-            return { state: "GOOD", nextClip_index: removable_clip_index };
+            //inset generated seq as is into the main seq
+            /** @type {Track} */
+            var track = clip_n_track.track;
+            var insertPos = selectedClip.start.seconds;
+            importedSeq.projectItem.renameBin(newName);
+            importedSeq.projectItem.name = newName;
+            importedSeq.projectItem.setColorLabel(6);
+            track.overwriteClip(importedSeq.projectItem, insertPos)
+
+            //ripple delete at the end
+            removable_clip.remove(true, false);
+
+            //cleanup
+            app.project.consolidateDuplicates()
+
+
+            this.SilenceCut_progress = false;
         } catch (e) {
-            delete e.source
-            return ToString(e, 2)
+            this.SilenceCut_progress = false;
+            return ToString(e, 2);
+        }
+    },
+
+    /** gets called by the fontend after logic and all cuts, essetnally its a cleanup logic */
+    SilenceCut_end: function () {
+        try {
+            // Restore and clear clip state after operation
+            this.SilenceCut_started = false;
+            this.SilenceCut_currentClip = null;
+            app.setEnableTranscodeOnIngest(this.SilenceCut_transcodeOnIngestState); //setback to original state
+            this.SilenceCut_transcodeOnIngestState = null;
+
+        } catch (e) {
+            return ToString(e, 2);
         }
     },
 
     /**
-     * splits a clip at a point
-     * @param {TrackItem} clip 
-     * @param {Track} track 
-     * @param {Number} at 
-     * @return {Boolean} whatever it did split or not
-    */
-    split: function (clip, track, at, clipIO) {
-        if (!this.global.frameTime)
-            this.global.frameTime = 8
-        //adding calc of half a frame to prevent micro seconds error
-        if (at - this.global.frameTime / 2 <= clipIO.in ||
-            at + this.global.frameTime / 2 >= clipIO.out) //if at position is outside of clip i/o there is no need in split
-            return false;
-
-        /**@type{ProjectItem} */
-        var clip_origin = clip.projectItem;
-
-        //sets the new in part for the new TrackItem that will be generated
-        var new_in_time = new Time().seconds = at;
-        clip_origin.setInPoint(new_in_time, 4);
-
-        //create cut
-        var insert_time = new Time().seconds = at - clipIO.in + clip.start.seconds;
-
-        track.overwriteClip(clip_origin, insert_time)
-
-        return true;
-    },
-
+     * gets current selected clip data
+     * @returns {{clip: TrackItem, track: Track, trackNum: Number, clipPos: Number} | {clip:undefined}}
+     */
     getSelectedClip_n_Track: function () {
         var currentSeq = app.project.activeSequence
         var numTracks = currentSeq.videoTracks.numTracks;
@@ -227,54 +201,11 @@ $._PPP_ = {
         return {};
     },
 
-    AutoCut_start: function () {
-        var clip_n_track = this.getSelectedClip_n_Track();
-        /** @type {TrackItem} */
-        var clip = clip_n_track.clip;
-        /** @type {Track}*/
-        var track = clip_n_track.track;
-        /** @type {Number}*/
-        var clip_index = clip_n_track.clipPos
 
-        //removing audio lines to prevent duplicates of audio tracks => prevents ripple delete
-        var clip_links = clip.getLinkedItems();
-        var index = 0;
-        while (clip_links.numItems > 1) { //while there is MORE then 1 linked item (eg. video & audio)
-            if (clip_links[index].mediaType != "Video") //Delete anything that is not the video as its disassemble the link
-                clip_links[index].remove(false, false);
-            else
-                index++;
-        }
 
-        var clip_origin = clip.projectItem;
-        clip_origin.setColorLabel(2)
-        this.autoCut_currentClip = clip_origin;
-        this.autoCut_currentClip_io = { inP: clip_origin.getInPoint(), outP: clip_origin.getOutPoint() }//get for later restoration
-
-        clip_origin.setInPoint(clip.inPoint, 4);
-        clip_origin.setOutPoint(clip.outPoint, 4);
-        var start = clip.start;
-        clip.remove(false, false)
-        track.overwriteClip(clip_origin, start); //replaces the clip but now the audio will be at the correct audio track(s)
-        track.clips[clip_index].setSelected(true, true);
-    },
-
-    AutoCut_end: function () {
-        try {
-            this.autoCut_started = false;
-            this.autoCut_currentClip.clearOutPoint()
-            this.autoCut_currentClip.clearInPoint()
-            this.autoCut_currentClip = null;
-            this.autoCut_currentClip_io = null;
-        }
-        catch (e) {
-            delete e.source
-            return ToString(e, 2)
-        }
-    },
-
-    getSelectedClipPath: function () {
-        var clip = this.getSelectedClip_n_Track().clip;
+    getSelectedClipPath: function (clip) {
+        if (!clip)
+            clip = this.getSelectedClip_n_Track().clip;
         if (!clip)
             return new Error("noClip")
         return clip.projectItem.getMediaPath();
@@ -758,6 +689,11 @@ $._PPP_ = {
         return this.global.frameTime;
     },
 
+    /**
+     * 
+     * @param {SequenceCollection | ProjectItem} seq 
+     * @returns {Sequence}
+     */
     GetSeq: function (seq) {
         if (seq.sequenceID != undefined)
             return seq;
@@ -1663,3 +1599,17 @@ function perlin() {
     };
     this.seed();
 };
+
+/**
+ * @param {TrackItem} clip 
+ */
+function getClipDimensions(clip) {
+    var projectItem = clip.projectItem;
+    var meta = String(projectItem.getProjectMetadata())
+    var inPoint = "<premierePrivateProjectMetaData:Column.Intrinsic.VideoInfo>";
+    var outPoint = "</premierePrivateProjectMetaData:Column.Intrinsic.VideoInfo>";
+    var dimensionsString = meta.substring(meta.lastIndexOf(inPoint) + inPoint.length, meta.lastIndexOf(outPoint))
+    var videoWidth = Number(dimensionsString.substring(0, dimensionsString.lastIndexOf(" x")));
+    var videoheight = Number(dimensionsString.substring(dimensionsString.lastIndexOf(" x ") + 3, dimensionsString.lastIndexOf(" (")));
+    return [videoWidth, videoheight]
+}

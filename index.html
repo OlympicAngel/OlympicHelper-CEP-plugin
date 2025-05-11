@@ -9,7 +9,17 @@
 
 
 	<meta charset="utf-8">
+	<script>
+		if (typeof module === 'object') {
+			window.module = module;
+			module = undefined;
+		}
+	</script>
 	<script src="./lib/jquery-1.9.1.js?u=1" charset="utf-8"></script>
+	<script>
+		if (window.module) module = window.module;
+		window.$ = window.jQuery = jQuery;
+	</script>
 
 	<script src="./lib/CSInterface.js" charset="utf-8"></script>
 	<script src="./ext.js" charset="utf-8"></script>
@@ -18,6 +28,7 @@
 	<script src="./lib/Vulcan.js" charset="utf-8"></script>
 	<script src="./lib/main.js" charset="utf-8"></script>
 	<script src="./lib/errors.js" charset="utf-8"></script>
+	<script src="./lib/autoSilenceXML.js" charset="utf-8"></script>
 	<script src="./lib/autoSilence.js" charset="utf-8"></script>
 
 	<script src="./lib/keyframe.js" charset="utf-8"></script>
@@ -29,26 +40,6 @@
 	<link href="css/v2.css" rel="stylesheet" type="text/css">
 
 	<link href="./css/jquery-ui-1.12.1.custom/jquery-ui.min.css" rel="stylesheet" type="text/css">
-
-	<!-- Google tag (gtag.js) -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id=G-LF4QFVX23H"></script>
-	<script>
-		window.dataLayer = window.dataLayer || [];
-		function gtag() { dataLayer.push(arguments); }
-		gtag('js', new Date());
-
-		gtag('config', 'G-LF4QFVX23H');
-	</script>
-
-	<script>
-
-		if (!window.location.hash) {
-			window.location = window.location + '#loaded';
-			window.location.reload();
-		} else {
-			//Init stuff here
-		}
-	</script>
 
 	<script type="text/javascript">
 
@@ -302,15 +293,6 @@
 
 
 		<button>Cut Silence</button>
-		<label class="EN" style="font-size: 1.2em;color:red">NOTICE! this operation will make a lots of edits!! - there
-			is no undo(s)! (thats sucks I know..)<br>
-			<b>Its also recommended to use this feature in a new sequence! <small style="opacity: 0.8;">(Will fail to
-					ripple delete if any video/audio items present above/below selected clip's
-					track)</small></b></label>
-		<label class="HE" style="font-size: 1.2em;color:red">שימו לב! פעולה זו תעשה הרבה פעולות עריכה!! - אין
-			אופצייה להחזיר הכל עם אנדו! (כע אני יודע זה מעפן)<br>
-			<b>בנוסף - מומלץ להשתמש עם הפיצ'ר הזה בסיקוונס חדש! <small style="opacity: 0.8;">(פעולת המחיקה תכשל אם
-					קיימים ווידאו / אודיו מעל או מתחת לקליפ שכרגע מסומן )</small></b></label>
 	</form>
 	<div class="cutLoader" style="display: none;">
 		<dot></dot>
